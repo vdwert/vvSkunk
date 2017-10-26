@@ -1,0 +1,8 @@
+version: 1.0.{build}
+image: Visual Studio 2017
+before_build:
+  - cmd: nuget restore . # NuGet's are restored on build by VS
+  - echo nuget command ended
+build:
+  project: '\src\Skunk.Website\Skunk.Website.csproj'
+  verbosity: minimal
