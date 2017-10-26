@@ -1,0 +1,25 @@
+﻿@inherits Umbraco.Web.Mvc.UmbracoViewPage<Skunk.Website.Entities.Feed.CompetitionCollection>
+
+<table class="table table-striped competition">
+    @if (Model.Count > 0)
+    {
+        foreach (Skunk.Website.Entities.Feed.Competition program in Model.GetSubSet(10))
+        {
+            <tr>
+                <td><h5>@program.Title</h5></td>
+            </tr>
+            <tr>
+                <td class="hidden-xs">@program.Summary</td>
+            </tr>
+        }
+    }
+    else
+    {
+        <tr>
+            <td>
+                <h5>Het programma is nog niet bekend.</h5>
+            </td>
+        </tr>
+    }
+</table>
+

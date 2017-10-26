@@ -1,0 +1,71 @@
+﻿@inherits Umbraco.Web.Mvc.UmbracoViewPage<Skunk.Website.Models.SearchModel>
+@{
+    Layout = "Shared/_Layout.cshtml";
+
+    IPublishedContent searchPage = Model.Site().Descendant("search");
+}
+
+<div class="content">
+    <h2>Zoekresultaten:</h2>
+    @foreach (var searchResult in Model.SearchResults)
+    {
+        IPublishedContent content = Umbraco.TypedContent(searchResult.Id);
+        if (content == null) { continue; }
+
+        <div class="row">
+            <div class="col-md-12">
+                @if (searchResult.Fields.Keys.Contains("title"))
+                {
+                    <h3>
+                        @if (content.DocumentTypeAlias != "Player")
+                        {
+                            <a href="@content.Url">@searchResult.Fields["title"]</a>
+                        }
+                        else
+                        {
+                            <a href="@content.Parent.Url">@searchResult.Fields["title"]</a>
+                        }
+                    </h3>
+                }
+                else
+                {
+                    <h3>
+                        @if (content.DocumentTypeAlias != "Player")
+                        {
+                            <a href="@content.Url">@searchResult.Fields["nodeName"]</a>
+                        }
+                        else
+                        {
+                            <a href="@content.Parent.Url">@searchResult.Fields["nodeName"]</a>
+                        }
+
+                    </h3>
+                }
+            </div>
+            @if (searchResult.Fields.Keys.Contains("content"))
+            {
+                <div class="col-md-12">
+                    @if (searchResult.Fields["content"].Length < 150)
+                    {
+                        <p>@searchResult.Fields["content"] ...</p>
+                    }
+                    else
+                    {
+                        <p>@searchResult.Fields["content"].Substring(0, 150) ...</p>
+                    }
+                </div>
+            }
+        </div>
+    }
+
+    @if (Model.SearchResults.Count() == 0)
+    {
+        <div class="row">
+            <div class="col-md-12">
+                <h3>
+                    Niets gevonden.
+                </h3>
+            </div>
+        </div>
+    }
+</div>

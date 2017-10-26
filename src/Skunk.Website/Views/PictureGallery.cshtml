@@ -1,0 +1,33 @@
+﻿@inherits Umbraco.Web.Mvc.UmbracoViewPage<Skunk.Website.Models.PictureGalleryModel>
+@{
+    Layout = "Shared/_Layout.cshtml";
+}
+
+<style type="text/css">
+    .port-image {
+        width: 100%;
+    }
+
+    .gallery_product {
+        margin-bottom: 10px;
+    }
+</style>
+
+<div class="row">
+    @foreach (var item in Model.Pictures)
+    {
+        <div class="gallery_product col-lg-4 col-md-4 col-sm-6 col-xs-12">
+            <img src="@Umbraco.Media(item).Url?width=365&height=365&quality=90&bgcolor=FFFFFF" class="img-responsive">
+        </div>
+    }
+</div>
+
+@section style
+{
+
+}
+
+@section scripts
+{
+
+}

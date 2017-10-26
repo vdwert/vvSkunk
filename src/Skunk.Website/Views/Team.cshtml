@@ -1,0 +1,97 @@
+﻿@inherits Umbraco.Web.Mvc.UmbracoViewPage<Skunk.Website.Models.TeamModel>
+@{
+    Layout = "Shared/_Layout.cshtml";
+    var teamSelection = Model.Children(t => t.DocumentTypeAlias == "Player").Where("Visible");
+}
+<div class="team">
+    <div class="row">
+        @if (Model.GetPropertyValue("photo", true) == null)
+        {
+            <div class="col-md-6 text-center team-padding-top">
+                <h1>
+                    Skunk<br />
+                    @Model.Name
+                </h1>
+            </div>
+            <div class="col-md-6 training-padding-top">
+                <h4>Trainingen</h4>
+                @Html.Raw(Model.GetPropertyValue("trainingTimes"))
+            </div>
+        }
+        else
+        {
+            <div class="col-md-2 text-center team-padding-top">
+                <h1>
+                    Skunk<br />
+                    @Model.Name
+                </h1>
+            </div>
+            <div class="col-md-4 training-padding-top">
+                <h4>Trainingen</h4>
+                @Html.Raw(Model.GetPropertyValue("trainingTimes"))
+            </div>
+            <div class="col-md-6">
+                <img class="img-responsive" src="@Umbraco.Media(Model.GetPropertyValue("photo", true)).Url?width=750&quality=90" />
+            </div>
+        }
+    </div>
+    @if (teamSelection.Count() > 0)
+    {
+        <div class="row">
+            <div class="col-md-12">
+                <div class="blue-divider">
+                    <h2>Spelers</h2>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            @foreach (var item in teamSelection)
+            {
+                <div class="player col-md-3 col-sm-4 col-xs-6">
+                    <img class="img-responsive" src="@Umbraco.Media(item.GetPropertyValue("photo", true)).Url?width=235&height=350&quality=90&bgcolor=fff" />
+                    <h4>@item.Name</h4>
+                    <h4>Type: @item.GetPropertyValue("playerType")</h4>
+                    <h4>Lengte: @item.GetPropertyValue("length")</h4>
+                    @if (!string.IsNullOrEmpty(item.GetPropertyValue("shirtNumber").ToString()))
+                    {
+                        <h4>Rugnummer: @item.GetPropertyValue("shirtNumber")</h4>
+                    }
+                    @if (!string.IsNullOrEmpty(item.GetPropertyValue("associationNumber").ToString()))
+                    {
+                        <h4>Bondsnummer: @item.GetPropertyValue("associationNumber")</h4>
+                    }
+                </div>
+            }
+        </div>
+    }
+    @if (!string.IsNullOrEmpty(Model.GetPropertyValue("competitionFeed").ToString()))
+    {
+        <div class="row">
+            <div class="col-md-12">
+                <div class="blue-divider">
+                    <h2>Programma</h2>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                @Html.Partial("Competition", Model.CompetitionCollection)
+            </div>
+        </div>
+    }
+    @if (!string.IsNullOrEmpty(Model.GetPropertyValue("positionFeed").ToString()))
+    {
+        <div class="row">
+            <div class="col-md-12">
+                <div class="blue-divider">
+                    <h2>Stand</h2>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                @Html.Partial("Position", Model.PositionCollection)
+            </div>
+        </div>
+    }
+</div>

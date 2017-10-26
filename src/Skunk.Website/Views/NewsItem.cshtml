@@ -1,0 +1,33 @@
+﻿@inherits Umbraco.Web.Mvc.UmbracoViewPage
+@{
+    Layout = "Shared/_Layout.cshtml";
+}
+<div class="content">
+
+    <div class="row">
+        <div class="col-md-12">
+            <h1>@Model.GetPropertyValue("title")</h1>
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <img class="img-responsive" src="@Umbraco.Media(Model.GetPropertyValue("photo", true)).Url?width=1140&quality=90" />
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12" style="padding-top: 20px;">
+            @Html.Raw(Model.GetPropertyValue("content"))
+        </div>
+    </div>
+
+    <div class="row">
+        <div class="col-md-12">
+            <span class="text-muted pull-right">
+                Gepubliceerd op: @Model.CreateDate.ToString("dddd d MMMM yyyy", System.Globalization.CultureInfo.GetCultureInfo("nl-NL"))
+            </span>
+        </div>
+    </div>
+
+</div>

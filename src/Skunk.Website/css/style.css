@@ -1,0 +1,124 @@
+body {
+    background-image: url('/img/background.jpg');
+    background-repeat: no-repeat;
+    background-attachment: fixed;
+}
+
+.page-background-color {
+    background-color: #ffffff;
+}
+
+.newsitem-image {
+    min-height: 225px;
+}
+
+.newsitem h2 {
+    font-family: 'Oswald', sans-serif;
+    color: #29AAE1;
+}
+
+.newsitem h4 {
+    font-family: 'Oswald', sans-serif;
+    color: #29AAE1;
+}
+
+.competition h5 {
+    font-weight: bold;
+}
+
+.content h1 {
+    font-family: 'Oswald', sans-serif;
+    color: #29AAE1;
+}
+
+.content h4 {
+    font-family: 'Oswald', sans-serif;
+    color: #29AAE1;
+}
+
+.team h1 {
+    font-family: 'Oswald', sans-serif;
+    color: #29AAE1;
+}
+
+.team h4 {
+    font-family: 'Oswald', sans-serif;
+    color: #29AAE1;
+}
+
+.team .team-padding-top {
+    padding-top: 40px;
+}
+
+.team .training-padding-top {
+    padding-top: 60px;
+}
+
+.player img {
+    clear: both;
+}
+
+a {
+    text-decoration: none;
+}
+
+    a:hover {
+        text-decoration: none;
+    }
+
+.newsitem text {
+    clear: both;
+}
+
+.blue-divider h2 {
+    font-family: 'Oswald', sans-serif;
+    background-color: #224080;
+    color: #ffffff;
+    padding-left: 15px;
+    padding-top: 15px;
+    padding-bottom: 15px;
+}
+
+.calltoaction {
+    background-color: #214080;
+    width: 100%;
+    height: 90px;
+}
+
+    .calltoaction span {
+        text-transform: uppercase;
+        color: #ffffff;
+        display: block;
+        width: 250px;
+        height: 100%;
+        margin: 0 auto;
+        font-size: 22px;
+        padding-top: 30px;
+    }
+
+.twitterfeed-header {
+    margin-top: 20px;
+    background-color: #28A9E1;
+    height: 90px;
+}
+
+    .twitterfeed-header span {
+        text-transform: uppercase;
+        color: #ffffff;
+        display: block;
+        width: 250px;
+        height: 100%;
+        margin: 0 auto;
+        font-size: 22px;
+        padding-top: 30px;
+    }
+
+.sponsorkliks {
+    margin-top: 20px;
+    background-color: #2F4050;
+    padding: 10px;
+}
+
+.search-homepage {
+    margin-bottom: 20px;
+}

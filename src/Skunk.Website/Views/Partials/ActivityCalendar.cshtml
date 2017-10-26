@@ -1,0 +1,19 @@
+﻿@inherits Umbraco.Web.Mvc.UmbracoViewPage
+
+@{ 
+    var activitySelection = Model.AncestorOrSelf("Home")
+        .DescendantsOrSelf("activity")
+        .Where(p => DateTime.Parse(p.GetPropertyValue("dateTime").ToString()) >= DateTime.Now)
+        .OrderBy(p => DateTime.Parse(p.GetPropertyValue("dateTime").ToString()));
+}
+
+<div class="list-group">
+    @foreach (var activity in activitySelection)
+    {
+        <a href="@activity.Url" class="list-group-item">
+            <span>@activity.GetPropertyValue("title")</span>
+            <span class="pull-right hidden-xs">@DateTime.Parse(activity.GetPropertyValue("dateTime").ToString()).ToString("dddd dd MMMM yyyy - HH:mmu", System.Globalization.CultureInfo.GetCultureInfo("nl-NL"))</span>
+            <span class="pull-right visible-xs">@DateTime.Parse(activity.GetPropertyValue("dateTime").ToString()).ToString("dd-MM-yyyy", System.Globalization.CultureInfo.GetCultureInfo("nl-NL"))</span>
+        </a>
+    }
+</div>

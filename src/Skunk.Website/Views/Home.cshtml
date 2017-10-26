@@ -1,0 +1,165 @@
+﻿@inherits Umbraco.Web.Mvc.UmbracoViewPage<Skunk.Website.Models.HomeModel>
+@{
+    Layout = "Shared/_Layout.cshtml";
+    IPublishedContent mainNewsItem = Umbraco.TypedContent(Model.GetPropertyValue<int>("mainNewsItem"));
+    IPublishedContent subNewsItem1 = Umbraco.TypedContent(Model.GetPropertyValue<int>("subNewsItem1"));
+    IPublishedContent subNewsItem2 = Umbraco.TypedContent(Model.GetPropertyValue<int>("subNewsItem2"));
+    IPublishedContent subNewsItem3 = Umbraco.TypedContent(Model.GetPropertyValue<int>("subNewsItem3"));
+}
+
+<div class="row">
+    <div class="col-md-8">
+        <div class="row">
+            <div class="col-md-12">
+                <div class="newsitem">
+                    @if (mainNewsItem.HasValue("photo"))
+                    {
+                        <img class="img-responsive" src="@Umbraco.Media(mainNewsItem.GetPropertyValue("photo", true)).Url?width=750&quality=90" />
+                    }
+                    <h2>
+                        <a href="@mainNewsItem.Url">@Html.Raw(mainNewsItem.GetPropertyValue("title"))</a>
+                    </h2>
+                    <div class="text">
+                        @Html.Raw(mainNewsItem.GetPropertyValue("content"))
+                    </div>
+                </div>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-4">
+                <div class="newsitem">
+                    @if (subNewsItem1.HasValue("photo"))
+                    {
+                        <div class="newsitem-image">
+                            <img class="img-responsive" src="@Umbraco.Media(subNewsItem1.GetPropertyValue("photo", true)).Url?width=750&quality=90" />
+                        </div>
+                    }
+                    <h4>
+                        <a href="@subNewsItem1.Url">@Html.Raw(subNewsItem1.GetPropertyValue("title"))</a>
+                    </h4>
+                    <div class="text">
+                        @Html.Raw(subNewsItem1.GetPropertyValue("content"))
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="newsitem">
+                    @if (subNewsItem2.HasValue("photo"))
+                    {
+                        <div class="newsitem-image">
+                            <img class="img-responsive" src="@Umbraco.Media(subNewsItem2.GetPropertyValue("photo", true)).Url?width=750&quality=90" />
+                        </div>
+                    }
+                    <h4>
+                        <a href="@subNewsItem2.Url">@Html.Raw(subNewsItem2.GetPropertyValue("title"))</a>
+                    </h4>
+                    <div class="text">
+                        @Html.Raw(subNewsItem2.GetPropertyValue("content"))
+                    </div>
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="newsitem">
+                    @if (subNewsItem3.HasValue("photo"))
+                    {
+                        <div class="newsitem-image">
+                            <img class="img-responsive" src="@Umbraco.Media(subNewsItem3.GetPropertyValue("photo", true)).Url?width=750&quality=90" />
+                        </div>
+                    }
+                    <h4>
+                        <a href="@subNewsItem3.Url">@Html.Raw(subNewsItem3.GetPropertyValue("title"))</a>
+                    </h4>
+                    <div class="text">
+                        @Html.Raw(subNewsItem3.GetPropertyValue("content"))
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="row">
+            <div class="col-md-12">
+                <a href="/registration-form" style="text-decoration: none;">
+                    <div class="calltoaction">
+                        <span>@Model.GetPropertyValue("signUpText")</span>
+                    </div>
+                </a>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <a href="https://www.sponsorkliks.com/products/shops.php?club=5511" target="_blank" style="text-decoration: none;">
+                    <div class="sponsorkliks">
+                        <img class="img-responsive" src="/img/sklogo-matte.png" style="margin: 0 auto;" alt="Met SponsorKliks kunt u nu zelf een financiële bijdrage leveren aan Skunk, zonder dat het u een cent extra kost!" />
+                    </div>
+                </a>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <a href="http://www.allsportswear.nl/shop/26/bekijken/20/clubshop.html" target="_blank" style="text-decoration: none;">
+                    <img class="img-responsive" src="/img/webshop-button.png?width=400&quality=90" style="margin: 0 auto;" />
+                </a>
+            </div>
+        </div>
+        <div class="row">
+            <div class="col-md-12">
+                <div class="twitterfeed-header">
+                    <span>#vvSkunk</span>
+                </div>
+                <a class="twitter-timeline" href="https://twitter.com/hashtag/vvSkunk" data-widget-id="677203901632876544" height="1000">Tweets over #vvSkunk</a>
+                <script>
+                    !function (d, s, id) {
+                        var js, fjs = d.getElementsByTagName(s)[0], p = /^http:/.test(d.location) ? 'http' : 'https';
+                        if (!d.getElementById(id)) {
+                            js = d.createElement(s);
+                            js.id = id;
+                            js.src = p + "://platform.twitter.com/widgets.js";
+                            fjs.parentNode.insertBefore(js, fjs);
+                        }
+                    }(document, "script", "twitter-wjs");
+                </script>
+            </div>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12">
+        <div class="blue-divider">
+            <h2>
+                Activiteiten
+                <a href='@Url.Action("GetActivitySyndicationFeed", "UtilitySurface")'>
+                    <img src="/img/feed-icon-28x28.png" />
+                </a>
+            </h2>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12">
+        @Html.Partial("ActivityCalendar")
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12">
+        <div class="blue-divider">
+            <h2>Programma</h2>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-md-12">
+        @Html.Partial("Competition", Model.CompetitionCollection)
+    </div>
+</div>
+
+@section scripts
+{
+    <script type="text/javascript">
+        $('.col-md-4 .newsitem').readmore({
+            collapsedHeight: 700,
+            moreLink: '<a href="#"><strong>Lees meer</strong></a>',
+            lessLink: '<a href="#"><strong>Sluiten</strong></a>'
+        });
+    </script>
+}
