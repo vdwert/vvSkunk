@@ -14,7 +14,7 @@
                 <div class="newsitem">
                     @if (mainNewsItem.HasValue("photo"))
                     {
-                        <img class="img-responsive" src="@Umbraco.Media(mainNewsItem.GetPropertyValue("photo", true)).Url?width=750&quality=90" />
+                        <img class="img-responsive" src="@Umbraco.Media(mainNewsItem.GetPropertyValue("photo", true)).Url?width=750&quality=90&bgcolor=FFFFFF" />
                     }
                     <h2>
                         <a href="@mainNewsItem.Url">@Html.Raw(mainNewsItem.GetPropertyValue("title"))</a>
@@ -31,7 +31,7 @@
                     @if (subNewsItem1.HasValue("photo"))
                     {
                         <div class="newsitem-image">
-                            <img class="img-responsive" src="@Umbraco.Media(subNewsItem1.GetPropertyValue("photo", true)).Url?width=750&quality=90" />
+                            <img class="img-responsive" src="@Umbraco.Media(subNewsItem1.GetPropertyValue("photo", true)).Url?width=750&quality=90&bgcolor=FFFFFF" />
                         </div>
                     }
                     <h4>
@@ -47,7 +47,7 @@
                     @if (subNewsItem2.HasValue("photo"))
                     {
                         <div class="newsitem-image">
-                            <img class="img-responsive" src="@Umbraco.Media(subNewsItem2.GetPropertyValue("photo", true)).Url?width=750&quality=90" />
+                            <img class="img-responsive" src="@Umbraco.Media(subNewsItem2.GetPropertyValue("photo", true)).Url?width=750&quality=90&bgcolor=FFFFFF" />
                         </div>
                     }
                     <h4>
@@ -63,7 +63,7 @@
                     @if (subNewsItem3.HasValue("photo"))
                     {
                         <div class="newsitem-image">
-                            <img class="img-responsive" src="@Umbraco.Media(subNewsItem3.GetPropertyValue("photo", true)).Url?width=750&quality=90" />
+                            <img class="img-responsive" src="@Umbraco.Media(subNewsItem3.GetPropertyValue("photo", true)).Url?width=750&quality=90&bgcolor=FFFFFF" />
                         </div>
                     }
                     <h4>
