@@ -231,7 +231,7 @@
             @foreach (var sponsorLink in Model.GetPropertyValue<IEnumerable<IPublishedContent>>("sponsorLinks", true))
             {
                 <div class="col-md-2 col-sm-3 col-xs-6">
-                    <a href="@sponsorLink.GetPropertyValue("hyperlink")">
+                    <a href="@sponsorLink.GetPropertyValue("hyperlink")" target="_blank">
                         <img class="img-responsive" src="@Umbraco.Media(sponsorLink.GetPropertyValue("picture")).Url?width=400&height=160&quality=90&bgcolor=FFFFFF" />
                     </a>
                 </div>
