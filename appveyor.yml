@@ -13,6 +13,7 @@ build:
 artifacts:
 - path: vvSkunk.zip
   name: HK-AZWEB01
+  type: zip
 deploy:
 - provider: Environment
   name: HK-AZWEB01
