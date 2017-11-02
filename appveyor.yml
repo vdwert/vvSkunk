@@ -1,11 +1,26 @@
 version: 1.0.{build}
-image: Visual Studio 2017
 branches:
   only:
-     - /.*(master).*/
+  - master
+image: Visual Studio 2017
+configuration: Release
 before_build:
   - cmd: nuget restore . # NuGet's are restored on build by VS
   - echo nuget command ended
 build:
   project: '\Skunk.Website\Skunk.Website.csproj'
   verbosity: minimal
+artifacts:
+- path: vvSkunk.zip
+  name: vvSkunk
+deploy:
+- provider: Environment
+  name: HK-AZWEB01
+  site_name: efabriek_nl_www
+notifications:
+- provider: Email
+  to:
+  - marc@marcvandewert.nl
+  on_build_success: true
+  on_build_failure: true
+  on_build_status_changed: false
