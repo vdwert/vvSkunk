@@ -12,7 +12,7 @@ build:
   verbosity: minimal
 artifacts:
 - path: vvSkunk.zip
-  name: vvSkunk
+  name: HK-AZWEB01
 deploy:
 - provider: Environment
   name: HK-AZWEB01
