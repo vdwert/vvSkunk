@@ -9,6 +9,10 @@ before_build:
   - echo nuget command ended
 build_script:
 - ps: msbuild "Skunk.Website\Skunk.Website.csproj" /v:Minimal /T:Package /P:PackageLocation=vvSkunk_WebSite.zip ; appveyor PushArtifact "Skunk.Website\vvSkunk_WebSite.zip" -Type WebDeployPackage -DeploymentName HK_AZWEB01
+deploy:
+- provider: Environment
+  name: HK_AZWEB01
+  site_name: efabriek_nl_www
 notifications:
 - provider: Email
   to:
