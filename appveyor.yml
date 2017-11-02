@@ -8,7 +8,7 @@ before_build:
   - cmd: nuget restore . # NuGet's are restored on build by VS
   - echo nuget command ended
 build_script:
-- ps: msbuild "\Skunk.Website\Skunk.Website.csproj" /T:Package /P:PackageLocation="%APPVEYOR_BUILD_FOLDER%\vvSkunk.WebSite.zip"
+- ps: msbuild "Skunk.Website\Skunk.Website.csproj" /T:Package /P:PackageLocation="%APPVEYOR_BUILD_FOLDER%\vvSkunk.WebSite.zip"
 artifacts:
 - path: vvSkunk.WebSite.zip
   name: vvSkunk
