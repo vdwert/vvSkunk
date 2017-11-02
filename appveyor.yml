@@ -11,7 +11,7 @@ build:
   project: '\Skunk.Website\Skunk.Website.csproj'
   verbosity: minimal
 artifacts:
-- path: vvSkunk.zip
+- path: dist/vvSkunk.zip
   name: HK-AZWEB01
   type: zip
 deploy:
