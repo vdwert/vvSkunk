@@ -7,11 +7,11 @@ configuration: Release
 before_build:
   - cmd: nuget restore . # NuGet's are restored on build by VS
   - echo nuget command ended
-build:
-  project: '\Skunk.Website\Skunk.Website.csproj'
-  verbosity: minimal
+build_script:
+- ps: msbuild \Skunk.Website\Skunk.Website.csproj /T:Package /P:PackageLocation="%APPVEYOR_BUILD_FOLDER%\vvSkunk.WebSite.zip"
 artifacts:
-- name: vvSkunk
+- path: vvSkunk.WebSite.zip
+  name: vvSkunk
   type: zip
 deploy:
 - provider: Environment
