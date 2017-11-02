@@ -8,8 +8,7 @@ before_build:
   - cmd: nuget restore . # NuGet's are restored on build by VS
   - echo nuget command ended
 build_script:
-- ps: msbuild "Skunk.Website\Skunk.Website.csproj" /v:Minimal /T:Package /P:PackageLocation="%APPVEYOR_BUILD_FOLDER%\vvSkunk.WebSite.zip"
-      appveyor PushArtifact vvSkunk.WebSite.zip -Type WebDeployPackage -DeploymentName HK_AZWEB01
+- ps: msbuild "Skunk.Website\Skunk.Website.csproj" /v:Minimal /T:Package /P:PackageLocation="%APPVEYOR_BUILD_FOLDER%\vvSkunk.WebSite.zip" ; appveyor PushArtifact vvSkunk.WebSite.zip -Type WebDeployPackage -DeploymentName HK_AZWEB01
 notifications:
 - provider: Email
   to:
