@@ -12,6 +12,7 @@ build_script:
 artifacts:
 - path: Skunk.Website\vvSkunk_WebSite.zip
   name: vvSkunk
+  type: WebDeployPackage
 deploy:
 - provider: Environment
   name: HK_AZWEB01
