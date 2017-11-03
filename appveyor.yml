@@ -15,8 +15,8 @@ artifacts:
 deploy:
 - provider: Environment
   name: HK_AZWEB01
-  Skunk.Website.deploy_website: true
-  Skunk.Website.site_name: efabriek_nl_www
+  vvSkunk.deploy_website: true
+  vvSkunk.site_name: efabriek_nl_www
 notifications:
 - provider: Email
   to:
