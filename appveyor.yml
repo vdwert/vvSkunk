@@ -13,7 +13,8 @@ artifacts:
 - path: Skunk.Website\vvSkunk_WebSite.zip
   name: vvSkunk
   type: WebDeployPackage
-deploy:
+# The settings vvSkunk.deploy_website and vvSkunk.site_name have to be entered in the appveyor backend to work.
+  deploy:
 - provider: Environment
   name: HK_AZWEB01
   vvSkunk.deploy_website: true
