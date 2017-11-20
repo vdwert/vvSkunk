@@ -1,7 +1,7 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Project ToolsVersion="12.0" DefaultTargets="Build" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="..\packages\uSync.4.0.2\build\uSync.props" Condition="Exists('..\packages\uSync.4.0.2\build\uSync.props')" />
   <Import Project="..\packages\UmbracoCms.7.7.5\build\UmbracoCms.props" Condition="Exists('..\packages\UmbracoCms.7.7.5\build\UmbracoCms.props')" />
-  <Import Project="..\packages\uSync.4.0.1\build\uSync.props" Condition="Exists('..\packages\uSync.4.0.1\build\uSync.props')" />
   <Import Project="..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.0\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props" Condition="Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.0\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" />
   <Import Project="..\packages\Microsoft.Net.Compilers.1.0.0\build\Microsoft.Net.Compilers.props" Condition="Exists('..\packages\Microsoft.Net.Compilers.1.0.0\build\Microsoft.Net.Compilers.props')" />
   <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
@@ -89,11 +89,11 @@
     <Reference Include="interfaces, Version=1.0.6527.19568, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\UmbracoCms.Core.7.7.5\lib\net45\interfaces.dll</HintPath>
     </Reference>
-    <Reference Include="Jumoo.uSync.BackOffice, Version=4.0.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\uSync.4.0.1\lib\net45\Jumoo.uSync.BackOffice.dll</HintPath>
+    <Reference Include="Jumoo.uSync.BackOffice, Version=4.0.2.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\uSync.4.0.2\lib\net45\Jumoo.uSync.BackOffice.dll</HintPath>
     </Reference>
-    <Reference Include="Jumoo.uSync.Core, Version=6.0.1.0, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\uSync.Core.6.0.1\lib\net45\Jumoo.uSync.Core.dll</HintPath>
+    <Reference Include="Jumoo.uSync.Core, Version=6.0.2.0, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\uSync.Core.6.0.2\lib\net45\Jumoo.uSync.Core.dll</HintPath>
     </Reference>
     <Reference Include="Jumoo.uSync.Snapshots, Version=1.0.2.740, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\uSync.Snapshots.1.0.2.740\lib\net451\Jumoo.uSync.Snapshots.dll</HintPath>
@@ -368,8 +368,6 @@
     <Content Include="App_Plugins\ModelsBuilder\package.manifest" />
     <Content Include="App_Plugins\uSyncSnapshots\package.manifest" />
     <Content Include="Config\ClientDependency.config" />
-    <Content Include="Config\uSyncCore.Config" />
-    <Content Include="App_Plugins\uSync\package.manifest" />
     <Content Include="media\Web.config" />
     <Content Include="Config\tinyMceConfig.config" />
     <Content Include="Config\scripting.config" />
@@ -382,6 +380,8 @@
     <Content Include="Config\BaseRestExtensions.config" />
     <Content Include="Config\applications.config" />
     <Content Include="Config\404handlers.config" />
+    <Content Include="Config\uSyncCore.Config" />
+    <Content Include="App_Plugins\uSync\package.manifest" />
     <None Include="packages.config" />
     <None Include="Properties\PublishProfiles\Deploy.pubxml" />
     <None Include="Scripts\jquery-1.11.3.intellisense.js" />
@@ -499,13 +499,13 @@
     </PropertyGroup>
     <Error Condition="!Exists('..\packages\Microsoft.Net.Compilers.1.0.0\build\Microsoft.Net.Compilers.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.Net.Compilers.1.0.0\build\Microsoft.Net.Compilers.props'))" />
     <Error Condition="!Exists('..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.0\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.1.0.0\build\Microsoft.CodeDom.Providers.DotNetCompilerPlatform.props'))" />
-    <Error Condition="!Exists('..\packages\uSync.4.0.1\build\uSync.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\uSync.4.0.1\build\uSync.props'))" />
-    <Error Condition="!Exists('..\packages\uSync.4.0.1\build\uSync.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\uSync.4.0.1\build\uSync.targets'))" />
     <Error Condition="!Exists('..\packages\UmbracoCms.7.7.5\build\UmbracoCms.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\UmbracoCms.7.7.5\build\UmbracoCms.props'))" />
     <Error Condition="!Exists('..\packages\UmbracoCms.7.7.5\build\UmbracoCms.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\UmbracoCms.7.7.5\build\UmbracoCms.targets'))" />
+    <Error Condition="!Exists('..\packages\uSync.4.0.2\build\uSync.props')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\uSync.4.0.2\build\uSync.props'))" />
+    <Error Condition="!Exists('..\packages\uSync.4.0.2\build\uSync.targets')" Text="$([System.String]::Format('$(ErrorText)', '..\packages\uSync.4.0.2\build\uSync.targets'))" />
   </Target>
-  <Import Project="..\packages\uSync.4.0.1\build\uSync.targets" Condition="Exists('..\packages\uSync.4.0.1\build\uSync.targets')" />
   <Import Project="..\packages\UmbracoCms.7.7.5\build\UmbracoCms.targets" Condition="Exists('..\packages\UmbracoCms.7.7.5\build\UmbracoCms.targets')" />
+  <Import Project="..\packages\uSync.4.0.2\build\uSync.targets" Condition="Exists('..\packages\uSync.4.0.2\build\uSync.targets')" />
   <!-- To modify your build process, add your task inside one of the targets below and uncomment it. 
        Other similar extension points exist, see Microsoft.Common.targets.
   <Target Name="BeforeBuild">
