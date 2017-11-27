@@ -113,6 +113,23 @@ a {
         padding-top: 30px;
     }
 
+.facebookfeed-header {
+    margin-top: 20px;
+    background-color: #224080;
+    height: 90px;
+}
+
+    .facebookfeed-header span {
+        text-transform: uppercase;
+        color: #ffffff;
+        display: block;
+        width: 250px;
+        height: 100%;
+        margin: 0 auto;
+        font-size: 22px;
+        padding-top: 30px;
+    }
+
 .sponsorkliks {
     margin-top: 20px;
     background-color: #2F4050;
