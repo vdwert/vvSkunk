@@ -9728,19 +9728,25 @@
         angular.module('umbraco').controller('Umbraco.Editors.PartialViews.EditController', PartialViewsEditController);
     }());
     function imageFilePickerController($scope) {
-        $scope.pick = function () {
-            $scope.mediaPickerDialog = {};
-            $scope.mediaPickerDialog.view = 'mediapicker';
-            $scope.mediaPickerDialog.show = true;
-            $scope.mediaPickerDialog.submit = function (model) {
-                $scope.model.value = model.selectedImages[0].image;
-                $scope.mediaPickerDialog.show = false;
-                $scope.mediaPickerDialog = null;
+        $scope.add = function () {
+            $scope.mediaPickerOverlay = {
+                view: 'mediapicker',
+                disableFolderSelect: true,
+                onlyImages: true,
+                show: true,
+                submit: function (model) {
+                    $scope.model.value = model.selectedImages[0].image;
+                    $scope.mediaPickerOverlay.show = false;
+                    $scope.mediaPickerOverlay = null;
+                },
+                close: function () {
+                    $scope.mediaPickerOverlay.show = false;
+                    $scope.mediaPickerOverlay = null;
+                }
             };
-            $scope.mediaPickerDialog.close = function (oldModel) {
-                $scope.mediaPickerDialog.show = false;
-                $scope.mediaPickerDialog = null;
-            };
+        };
+        $scope.remove = function () {
+            $scope.model.value = null;
         };
     }
     angular.module('umbraco').controller('Umbraco.PrevalueEditors.ImageFilePickerController', imageFilePickerController);
@@ -12053,10 +12059,10 @@
             }
             //ensure the grid has a column value set,
             //if nothing is found, set it to 12
-            if ($scope.model.config.items.columns && angular.isString($scope.model.config.items.columns)) {
-                $scope.model.config.items.columns = parseInt($scope.model.config.items.columns);
-            } else {
+            if (!$scope.model.config.items.columns) {
                 $scope.model.config.items.columns = 12;
+            } else if (angular.isString($scope.model.config.items.columns)) {
+                $scope.model.config.items.columns = parseInt($scope.model.config.items.columns);
             }
             if ($scope.model.value && $scope.model.value.sections && $scope.model.value.sections.length > 0 && $scope.model.value.sections[0].rows && $scope.model.value.sections[0].rows.length > 0) {
                 if ($scope.model.value.name && angular.isArray($scope.model.config.items.templates)) {
@@ -13871,6 +13877,7 @@
         function setupViewModel() {
             $scope.images = [];
             $scope.ids = [];
+            $scope.isMultiPicker = multiPicker;
             if ($scope.model.value) {
                 var ids = $scope.model.value.split(',');
                 //NOTE: We need to use the entityResource NOT the mediaResource here because
@@ -15236,6 +15243,9 @@
                 // element might still be there even after the modal has been hidden.
                 $scope.$on('$destroy', function () {
                     unsubscribe();
+                    if (tinyMceEditor !== undefined && tinyMceEditor != null) {
+                        tinyMceEditor.destroy();
+                    }
                 });
             });
         });
