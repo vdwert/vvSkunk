@@ -356,8 +356,8 @@
     <Reference Include="Umbraco.ModelsBuilder, Version=3.0.10.102, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\Umbraco.ModelsBuilder.3.0.10\lib\Umbraco.ModelsBuilder.dll</HintPath>
     </Reference>
-    <Reference Include="Umbraco.ModelsBuilder.Api, Version=3.0.6.97, Culture=neutral, processorArchitecture=MSIL">
-      <HintPath>..\packages\Umbraco.ModelsBuilder.Api.3.0.6\lib\Umbraco.ModelsBuilder.Api.dll</HintPath>
+    <Reference Include="Umbraco.ModelsBuilder.Api, Version=3.0.10.102, Culture=neutral, processorArchitecture=MSIL">
+      <HintPath>..\packages\Umbraco.ModelsBuilder.Api.3.0.10\lib\Umbraco.ModelsBuilder.Api.dll</HintPath>
     </Reference>
     <Reference Include="umbraco.providers, Version=1.0.6611.19720, Culture=neutral, processorArchitecture=MSIL">
       <HintPath>..\packages\UmbracoCms.Core.7.8.0\lib\net45\umbraco.providers.dll</HintPath>
