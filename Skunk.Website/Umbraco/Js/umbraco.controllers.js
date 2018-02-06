@@ -1,5 +1,5 @@
 (function () {
-    function MainController($scope, $rootScope, $location, $routeParams, $timeout, $http, $log, appState, treeService, notificationsService, userService, navigationService, historyService, updateChecker, assetsService, eventsService, umbRequestHelper, tmhDynamicLocale, localStorageService) {
+    function MainController($scope, $rootScope, $location, $routeParams, $timeout, $http, $log, appState, treeService, notificationsService, userService, navigationService, historyService, updateChecker, assetsService, eventsService, umbRequestHelper, tmhDynamicLocale, localStorageService, tourService) {
         //the null is important because we do an explicit bool check on this in the view
         //the avatar is by default the umbraco logo    
         $scope.authenticated = null;
@@ -107,6 +107,35 @@
                 error: error,
                 show: true
             };
+        }));
+        // manage the help dialog by subscribing to the showHelp appState
+        $scope.drawer = {};
+        evts.push(eventsService.on('appState.drawerState.changed', function (e, args) {
+            // set view
+            if (args.key === 'view') {
+                $scope.drawer.view = args.value;
+            }
+            // set custom model
+            if (args.key === 'model') {
+                $scope.drawer.model = args.value;
+            }
+            // show / hide drawer
+            if (args.key === 'showDrawer') {
+                $scope.drawer.show = args.value;
+            }
+        }));
+        evts.push(eventsService.on('appState.tour.start', function (name, args) {
+            $scope.tour = args;
+            $scope.tour.show = true;
+        }));
+        evts.push(eventsService.on('appState.tour.end', function () {
+            $scope.tour = null;
+        }));
+        evts.push(eventsService.on('appState.tour.complete', function () {
+            $scope.tour = null;
+        }));
+        evts.push(eventsService.on('appState.backdrop', function (name, args) {
+            $scope.backdrop = args;
         }));
         //ensure to unregister from all events!
         $scope.$on('$destroy', function () {
@@ -295,19 +324,30 @@
             }
         };
         var group = undefined;
+        var groupNames = [];
         var groupIndex = -1;
         var itemIndex = -1;
         $scope.selectedItem = undefined;
+        $scope.clearSearch = function () {
+            $scope.searchTerm = null;
+        };
         function iterateResults(up) {
             //default group
             if (!group) {
-                group = $scope.groups[0];
+                for (var g in $scope.groups) {
+                    if ($scope.groups.hasOwnProperty(g)) {
+                        groupNames.push(g);
+                    }
+                }
+                //Sorting to match the groups order
+                groupNames.sort();
+                group = $scope.groups[groupNames[0]];
                 groupIndex = 0;
             }
             if (up) {
                 if (itemIndex === 0) {
                     if (groupIndex === 0) {
-                        gotoGroup($scope.groups.length - 1, true);
+                        gotoGroup(Object.keys($scope.groups).length - 1, true);
                     } else {
                         gotoGroup(groupIndex - 1, true);
                     }
@@ -318,7 +358,7 @@
                 if (itemIndex < group.results.length - 1) {
                     gotoItem(itemIndex + 1);
                 } else {
-                    if (groupIndex === $scope.groups.length - 1) {
+                    if (groupIndex === Object.keys($scope.groups).length - 1) {
                         gotoGroup(0);
                     } else {
                         gotoGroup(groupIndex + 1);
@@ -328,7 +368,7 @@
         }
         function gotoGroup(index, up) {
             groupIndex = index;
-            group = $scope.groups[groupIndex];
+            group = $scope.groups[groupNames[groupIndex]];
             if (up) {
                 gotoItem(group.results.length - 1);
             } else {
@@ -346,6 +386,11 @@
                 $scope.hasResults = false;
                 if ($scope.searchTerm) {
                     if (newVal !== null && newVal !== undefined && newVal !== oldVal) {
+                        //Resetting for brand new search
+                        group = undefined;
+                        groupNames = [];
+                        groupIndex = -1;
+                        itemIndex = -1;
                         $scope.isSearching = true;
                         navigationService.showSearch();
                         $scope.selectedItem = undefined;
@@ -2008,6 +2053,143 @@
         };
     }
     angular.module('umbraco').controller('Umbraco.Dialogs.YsodController', YsodController);
+    (function () {
+        'use strict';
+        function HelpDrawerController($scope, $routeParams, $timeout, dashboardResource, localizationService, userService, eventsService, helpService, appState, tourService, $filter) {
+            var vm = this;
+            var evts = [];
+            vm.title = localizationService.localize('general_help');
+            vm.subtitle = 'Umbraco version' + ' ' + Umbraco.Sys.ServerVariables.application.version;
+            vm.section = $routeParams.section;
+            vm.tree = $routeParams.tree;
+            vm.sectionName = '';
+            vm.customDashboard = null;
+            vm.tours = [];
+            vm.closeDrawer = closeDrawer;
+            vm.startTour = startTour;
+            vm.getTourGroupCompletedPercentage = getTourGroupCompletedPercentage;
+            vm.showTourButton = showTourButton;
+            function startTour(tour) {
+                tourService.startTour(tour);
+                closeDrawer();
+            }
+            function oninit() {
+                tourService.getGroupedTours().then(function (groupedTours) {
+                    vm.tours = groupedTours;
+                    getTourGroupCompletedPercentage();
+                });
+                // load custom help dashboard
+                dashboardResource.getDashboard('user-help').then(function (dashboard) {
+                    vm.customDashboard = dashboard;
+                });
+                if (!vm.section) {
+                    vm.section = 'content';
+                }
+                setSectionName();
+                userService.getCurrentUser().then(function (user) {
+                    vm.userType = user.userType;
+                    vm.userLang = user.locale;
+                    evts.push(eventsService.on('appState.treeState.changed', function (e, args) {
+                        handleSectionChange();
+                    }));
+                    findHelp(vm.section, vm.tree, vm.usertype, vm.userLang);
+                });
+                // check if a tour is running - if it is open the matching group
+                var currentTour = tourService.getCurrentTour();
+                if (currentTour) {
+                    openTourGroup(currentTour.alias);
+                }
+            }
+            function closeDrawer() {
+                appState.setDrawerState('showDrawer', false);
+            }
+            function handleSectionChange() {
+                $timeout(function () {
+                    if (vm.section !== $routeParams.section || vm.tree !== $routeParams.tree) {
+                        vm.section = $routeParams.section;
+                        vm.tree = $routeParams.tree;
+                        setSectionName();
+                        findHelp(vm.section, vm.tree, vm.usertype, vm.userLang);
+                    }
+                });
+            }
+            function findHelp(section, tree, usertype, userLang) {
+                helpService.getContextHelpForPage(section, tree).then(function (topics) {
+                    vm.topics = topics;
+                });
+                var rq = {};
+                rq.section = vm.section;
+                rq.usertype = usertype;
+                rq.lang = userLang;
+                if ($routeParams.url) {
+                    rq.path = decodeURIComponent($routeParams.url);
+                    if (rq.path.indexOf(Umbraco.Sys.ServerVariables.umbracoSettings.umbracoPath) === 0) {
+                        rq.path = rq.path.substring(Umbraco.Sys.ServerVariables.umbracoSettings.umbracoPath.length);
+                    }
+                    if (rq.path.indexOf('.aspx') > 0) {
+                        rq.path = rq.path.substring(0, rq.path.indexOf('.aspx'));
+                    }
+                } else {
+                    rq.path = rq.section + '/' + $routeParams.tree + '/' + $routeParams.method;
+                }
+                helpService.findVideos(rq).then(function (videos) {
+                    vm.videos = videos;
+                });
+            }
+            function setSectionName() {
+                // Get section name
+                var languageKey = 'sections_' + vm.section;
+                localizationService.localize(languageKey).then(function (value) {
+                    vm.sectionName = value;
+                });
+            }
+            function showTourButton(index, tourGroup) {
+                if (index !== 0) {
+                    var prevTour = tourGroup.tours[index - 1];
+                    if (prevTour.completed) {
+                        return true;
+                    }
+                } else {
+                    return true;
+                }
+            }
+            function openTourGroup(tourAlias) {
+                angular.forEach(vm.tours, function (group) {
+                    angular.forEach(group, function (tour) {
+                        if (tour.alias === tourAlias) {
+                            group.open = true;
+                        }
+                    });
+                });
+            }
+            function getTourGroupCompletedPercentage() {
+                // Finding out, how many tours are completed for the progress circle
+                angular.forEach(vm.tours, function (group) {
+                    var completedTours = 0;
+                    angular.forEach(group.tours, function (tour) {
+                        if (tour.completed) {
+                            completedTours++;
+                        }
+                    });
+                    group.completedPercentage = Math.round(completedTours / group.tours.length * 100);
+                });
+            }
+            evts.push(eventsService.on('appState.tour.complete', function (event, tour) {
+                tourService.getGroupedTours().then(function (groupedTours) {
+                    vm.tours = groupedTours;
+                    openTourGroup(tour.alias);
+                    getTourGroupCompletedPercentage();
+                });
+            }));
+            $scope.$on('$destroy', function () {
+                for (var e in evts) {
+                    eventsService.unsubscribe(evts[e]);
+                }
+            });
+            oninit();
+        }
+        angular.module('umbraco').controller('Umbraco.Drawers.Help', HelpDrawerController);
+    }());
     /**
  * @ngdoc controller
  * @name Umbraco.LegacyController
@@ -2876,6 +3058,7 @@
             results: [],
             selectedSearchResults: []
         };
+        $scope.showTarget = $scope.model.hideTarget !== true;
         if (dialogOptions.currentTarget) {
             $scope.model.target = dialogOptions.currentTarget;
             //if we have a node ID, we fetch the current node to build the form data
@@ -4226,7 +4409,7 @@
             $scope.miniListView = node;
         }
     });
-    angular.module('umbraco').controller('Umbraco.Overlays.UserController', function ($scope, $location, $timeout, userService, historyService, eventsService, externalLoginInfo, authResource, currentUserResource, formHelper, localizationService) {
+    angular.module('umbraco').controller('Umbraco.Overlays.UserController', function ($scope, $location, $timeout, dashboardResource, userService, historyService, eventsService, externalLoginInfo, authResource, currentUserResource, formHelper, localizationService) {
         $scope.history = historyService.getCurrent();
         $scope.version = Umbraco.Sys.ServerVariables.application.version + ' assembly: ' + Umbraco.Sys.ServerVariables.application.assemblyVersion;
         $scope.showPasswordFields = false;
@@ -4367,6 +4550,9 @@
             $scope.changePasswordModel.value.newPassword = '';
             $scope.changePasswordModel.value.confirm = '';
         }
+        dashboardResource.getDashboard('user-dialog').then(function (dashboard) {
+            $scope.dashboard = dashboard;
+        });
     });
     (function () {
         'use strict';
@@ -4516,6 +4702,131 @@
             }
         }
     });
+    (function () {
+        'use strict';
+        function NodeNameController($scope) {
+            var vm = this;
+            var element = angular.element($scope.model.currentStep.element);
+            vm.error = false;
+            vm.initNextStep = initNextStep;
+            function initNextStep() {
+                if (element.val().toLowerCase() === 'home') {
+                    $scope.model.nextStep();
+                } else {
+                    vm.error = true;
+                }
+            }
+        }
+        angular.module('umbraco').controller('Umbraco.Tours.UmbIntroCreateContent.NodeNameController', NodeNameController);
+    }());
+    (function () {
+        'use strict';
+        function DocTypeNameController($scope) {
+            var vm = this;
+            var element = angular.element($scope.model.currentStep.element);
+            vm.error = false;
+            vm.initNextStep = initNextStep;
+            function initNextStep() {
+                if (element.val().toLowerCase() === 'home page') {
+                    $scope.model.nextStep();
+                } else {
+                    vm.error = true;
+                }
+            }
+        }
+        angular.module('umbraco').controller('Umbraco.Tours.UmbIntroCreateDocType.DocTypeNameController', DocTypeNameController);
+    }());
+    (function () {
+        'use strict';
+        function PropertyNameController($scope) {
+            var vm = this;
+            var element = angular.element($scope.model.currentStep.element);
+            vm.error = false;
+            vm.initNextStep = initNextStep;
+            function initNextStep() {
+                if (element.val().toLowerCase() === 'welcome text') {
+                    $scope.model.nextStep();
+                } else {
+                    vm.error = true;
+                }
+            }
+        }
+        angular.module('umbraco').controller('Umbraco.Tours.UmbIntroCreateDocType.PropertyNameController', PropertyNameController);
+    }());
+    (function () {
+        'use strict';
+        function TabNameController($scope) {
+            var vm = this;
+            var element = angular.element($scope.model.currentStep.element);
+            vm.error = false;
+            vm.initNextStep = initNextStep;
+            function initNextStep() {
+                if (element.val().toLowerCase() === 'home') {
+                    $scope.model.nextStep();
+                } else {
+                    vm.error = true;
+                }
+            }
+        }
+        angular.module('umbraco').controller('Umbraco.Tours.UmbIntroCreateDocType.TabNameController', TabNameController);
+    }());
+    (function () {
+        'use strict';
+        function FolderNameController($scope) {
+            var vm = this;
+            var element = angular.element($scope.model.currentStep.element);
+            vm.error = false;
+            vm.initNextStep = initNextStep;
+            function initNextStep() {
+                if (element.val().toLowerCase() === 'my images') {
+                    $scope.model.nextStep();
+                } else {
+                    vm.error = true;
+                }
+            }
+        }
+        angular.module('umbraco').controller('Umbraco.Tours.UmbIntroMediaSection.FolderNameController', FolderNameController);
+    }());
+    (function () {
+        'use strict';
+        function UploadImagesController($scope, editorState, mediaResource) {
+            var vm = this;
+            var element = angular.element($scope.model.currentStep.element);
+            vm.error = false;
+            vm.initNextStep = initNextStep;
+            function initNextStep() {
+                vm.error = false;
+                vm.buttonState = 'busy';
+                var currentNode = editorState.getCurrent();
+                // make sure we have uploaded at least one image
+                mediaResource.getChildren(currentNode.id).then(function (data) {
+                    var children = data;
+                    if (children.items && children.items.length > 0) {
+                        $scope.model.nextStep();
+                    } else {
+                        vm.error = true;
+                    }
+                    vm.buttonState = 'init';
+                });
+            }
+        }
+        angular.module('umbraco').controller('Umbraco.Tours.UmbIntroMediaSection.UploadImagesController', UploadImagesController);
+    }());
+    (function () {
+        'use strict';
+        function TemplatesTreeController($scope) {
+            var vm = this;
+            var eventElement = angular.element($scope.model.currentStep.eventElement);
+            function onInit() {
+                // check if tree is already open - if it is - go to next step
+                if (eventElement.hasClass('icon-navigation-down')) {
+                    $scope.model.nextStep();
+                }
+            }
+            onInit();
+        }
+        angular.module('umbraco').controller('Umbraco.Tours.UmbIntroRenderInTemplate.TemplatesTreeController', TemplatesTreeController);
+    }());
     angular.module('umbraco').controller('Umbraco.Editors.Content.CopyController', function ($scope, userService, eventsService, contentResource, navigationService, appState, treeService, localizationService, notificationsService) {
         var dialogOptions = $scope.dialogOptions;
         var searchText = 'Search...';
@@ -5034,6 +5345,14 @@
             } else {
                 contentResource.getById($scope.relation.parentId).then(function (data) {
                     $scope.target = data;
+                    // make sure the target item isn't in the recycle bin
+                    if ($scope.target.path.indexOf('-20') !== -1) {
+                        $scope.error = {
+                            errorMsg: 'Cannot automatically restore this item',
+                            data: { Message: 'The item you want to restore it under (' + $scope.target.name + ') is in the recycle bin. Use the Move menu item to move the item manually.' }
+                        };
+                        $scope.success = false;
+                    }
                 }, function (err) {
                     $scope.success = false;
                     $scope.error = err;
@@ -5341,10 +5660,21 @@
         };
     }
     angular.module('umbraco').controller('Umbraco.Dashboard.StartupVideosController', startUpVideosDashboardController);
-    function startUpDynamicContentController(dashboardResource, assetsService) {
+    function startUpDynamicContentController($timeout, dashboardResource, assetsService, tourService, eventsService) {
         var vm = this;
+        var evts = [];
         vm.loading = true;
         vm.showDefault = false;
+        vm.startTour = startTour;
+        function onInit() {
+            // load tours
+            tourService.getGroupedTours().then(function (groupedTours) {
+                vm.tours = groupedTours;
+            });
+        }
+        function startTour(tour) {
+            tourService.startTour(tour);
+        }
         // default dashboard content
         vm.defaultDashboard = {
             infoBoxes: [
@@ -5388,6 +5718,17 @@
                 }
             ]
         };
+        evts.push(eventsService.on('appState.tour.complete', function (name, completedTour) {
+            $timeout(function () {
+                angular.forEach(vm.tours, function (tourGroup) {
+                    angular.forEach(tourGroup, function (tour) {
+                        if (tour.alias === completedTour.alias) {
+                            tour.completed = true;
+                        }
+                    });
+                });
+            });
+        }));
         //proxy remote css through the local server
         assetsService.loadCss(dashboardResource.getRemoteDashboardCssUrl('content'));
         dashboardResource.getRemoteDashboardContent('content').then(function (data) {
@@ -5404,6 +5745,7 @@
             vm.loading = false;
             vm.showDefault = true;
         });
+        onInit();
     }
     angular.module('umbraco').controller('Umbraco.Dashboard.StartUpDynamicContentController', startUpDynamicContentController);
     function FormsController($scope, $route, $cookieStore, packageResource, localizationService) {
@@ -6425,22 +6767,26 @@
             vm.page.navigation = [
                 {
                     'name': localizationService.localize('general_design'),
+                    'alias': 'design',
                     'icon': 'icon-document-dashed-line',
                     'view': 'views/documenttypes/views/design/design.html',
                     'active': true
                 },
                 {
                     'name': localizationService.localize('general_listView'),
+                    'alias': 'listView',
                     'icon': 'icon-list',
                     'view': 'views/documenttypes/views/listview/listview.html'
                 },
                 {
                     'name': localizationService.localize('general_rights'),
+                    'alias': 'permissions',
                     'icon': 'icon-keychain',
                     'view': 'views/documenttypes/views/permissions/permissions.html'
                 },
                 {
                     'name': localizationService.localize('treeHeaders_templates'),
+                    'alias': 'templates',
                     'icon': 'icon-layout',
                     'view': 'views/documenttypes/views/templates/templates.html'
                 }
@@ -6543,6 +6889,7 @@
                 if (result) {
                     //Models builder mode:
                     vm.page.defaultButton = {
+                        alias: 'save',
                         hotKey: 'ctrl+s',
                         hotKeyWhenHidden: true,
                         labelKey: 'buttons_save',
@@ -6553,6 +6900,7 @@
                         }
                     };
                     vm.page.subButtons = [{
+                            alias: 'saveAndGenerateModels',
                             hotKey: 'ctrl+g',
                             hotKeyWhenHidden: true,
                             labelKey: 'buttons_saveAndGenerateModels',
@@ -6952,10 +7300,14 @@
  * @description
  * The controller for the media creation dialog
  */
-    function mediaCreateController($scope, $routeParams, mediaTypeResource, iconHelper) {
+    function mediaCreateController($scope, $routeParams, $location, mediaTypeResource, iconHelper, navigationService) {
         mediaTypeResource.getAllowedTypes($scope.currentNode.id).then(function (data) {
             $scope.allowedTypes = iconHelper.formatContentTypeIcons(data);
         });
+        $scope.createMediaItem = function (docType) {
+            $location.path('/media/media/edit/' + $scope.currentNode.id).search('doctype', docType.alias).search('create', 'true');
+            navigationService.hideMenu();
+        };
     }
     angular.module('umbraco').controller('Umbraco.Editors.Media.CreateController', mediaCreateController);
     /**
@@ -7065,6 +7417,8 @@
             mediaResource.getScaffold($routeParams.id, $routeParams.doctype).then(function (data) {
                 $scope.content = data;
                 editorState.set($scope.content);
+                // We don't get the info tab from the server from version 7.8 so we need to manually add it
+                contentEditingHelper.addInfoTab($scope.content.tabs);
                 $scope.page.loading = false;
             });
         } else {
@@ -7087,6 +7441,8 @@
                         $scope.ancestors = anc;
                     });
                 }
+                // We don't get the info tab from the server from version 7.8 so we need to manually add it
+                contentEditingHelper.addInfoTab($scope.content.tabs);
                 $scope.page.loading = false;
             });
         }
@@ -10811,10 +11167,7 @@
         //get the current user to see if we can localize this picker
         userService.getCurrentUser().then(function (user) {
             assetsService.loadCss('lib/datetimepicker/bootstrap-datetimepicker.min.css').then(function () {
-                var filesToLoad = [
-                    'lib/moment/moment-with-locales.js',
-                    'lib/datetimepicker/bootstrap-datetimepicker.js'
-                ];
+                var filesToLoad = ['lib/datetimepicker/bootstrap-datetimepicker.js'];
                 $scope.model.config.language = user.locale;
                 assetsService.load(filesToLoad, $scope).then(function () {
                     //The Datepicker js and css files are available and all components are ready to use.
@@ -11754,7 +12107,7 @@
         $scope.openEditorOverlay = function (event, area, index, key) {
             $scope.editorOverlay = {
                 view: 'itempicker',
-                filter: false,
+                filter: area.$allowedEditors.length > 15,
                 title: localizationService.localize('grid_insertControl'),
                 availableItems: area.$allowedEditors,
                 event: event,
@@ -12222,6 +12575,13 @@
         };
         gridService.getGridEditors().then(function (response) {
             $scope.availableEditors = response.data;
+            //Localize the grid editor names
+            angular.forEach($scope.availableEditors, function (value, key) {
+                //If no translation is provided, keep using the editor name from the manifest
+                if (localizationService.dictionary.hasOwnProperty('grid_' + value.alias)) {
+                    value.name = localizationService.localize('grid_' + value.alias);
+                }
+            });
             $scope.contentReady = true;
             // *********************************************
             // Init grid
@@ -12708,12 +13068,12 @@
         });
         // Return a helper with preserved width of cells
         var fixHelper = function (e, ui) {
-            var h = ui.clone();
-            h.children().each(function () {
+            ui.children().each(function () {
                 $(this).width($(this).width());
             });
-            h.css('background-color', 'lightgray');
-            return h;
+            var row = ui.clone();
+            row.css('background-color', 'lightgray');
+            return row;
         };
         $scope.sortableOptions = {
             helper: fixHelper,
@@ -12724,6 +13084,10 @@
             cursor: 'move',
             items: '> tr',
             tolerance: 'pointer',
+            forcePlaceholderSize: true,
+            start: function (e, ui) {
+                ui.placeholder.height(ui.item.height());
+            },
             update: function (e, ui) {
                 // Get the new and old index for the moved element (using the text as the identifier)
                 var newIndex = ui.item.index();
@@ -16984,7 +17348,7 @@
     }());
     (function () {
         'use strict';
-        function UserEditController($scope, $timeout, $location, $routeParams, formHelper, usersResource, userService, contentEditingHelper, localizationService, notificationsService, mediaHelper, Upload, umbRequestHelper, usersHelper, authResource, dateHelper) {
+        function UserEditController($scope, eventsService, $q, $timeout, $location, $routeParams, formHelper, usersResource, userService, contentEditingHelper, localizationService, notificationsService, mediaHelper, Upload, umbRequestHelper, usersHelper, authResource, dateHelper) {
             var vm = this;
             vm.page = {};
             vm.page.rootIcon = 'icon-folder';
@@ -17008,6 +17372,7 @@
             vm.disableUser = disableUser;
             vm.enableUser = enableUser;
             vm.unlockUser = unlockUser;
+            vm.changeAvatar = changeAvatar;
             vm.clearAvatar = clearAvatar;
             vm.save = save;
             vm.toggleChangePassword = toggleChangePassword;
@@ -17076,34 +17441,72 @@
                 vm.user.changePassword = null;
             }
             function save() {
-                vm.page.saveButtonState = 'busy';
-                vm.user.resetPasswordValue = null;
-                //anytime a user is changing another user's password, we are in effect resetting it so we need to set that flag here
-                if (vm.user.changePassword) {
-                    vm.user.changePassword.reset = !vm.user.changePassword.oldPassword && !vm.user.isCurrentUser;
-                }
-                contentEditingHelper.contentEditorPerformSave({
-                    statusMessage: vm.labels.saving,
-                    saveMethod: usersResource.saveUser,
-                    scope: $scope,
-                    content: vm.user,
-                    // We do not redirect on failure for users - this is because it is not possible to actually save a user
-                    // when server side validation fails - as opposed to content where we are capable of saving the content
-                    // item if server side validation fails
-                    redirectOnFailure: false,
-                    rebindCallback: function (orignal, saved) {
+                if (formHelper.submitForm({
+                        scope: $scope,
+                        statusMessage: vm.labels.saving
+                    })) {
+                    //anytime a user is changing another user's password, we are in effect resetting it so we need to set that flag here
+                    if (vm.user.changePassword) {
+                        vm.user.changePassword.reset = !vm.user.changePassword.oldPassword && !vm.user.isCurrentUser;
                     }
-                }).then(function (saved) {
-                    vm.user = saved;
-                    setUserDisplayState();
-                    formatDatesToLocal(vm.user);
-                    vm.changePasswordModel.isChanging = false;
-                    vm.page.saveButtonState = 'success';
-                    //the user has a password if they are not states: Invited, NoCredentials
-                    vm.changePasswordModel.config.hasPassword = vm.user.userState !== 3 && vm.user.userState !== 4;
-                }, function (err) {
-                    vm.page.saveButtonState = 'error';
-                });
+                    vm.page.saveButtonState = 'busy';
+                    vm.user.resetPasswordValue = null;
+                    //save current nav to be restored later so that the tabs dont change
+                    var currentNav = vm.user.navigation;
+                    usersResource.saveUser(vm.user).then(function (saved) {
+                        //if the user saved, then try to execute all extended save options
+                        extendedSave(saved).then(function (result) {
+                            //if all is good, then reset the form
+                            formHelper.resetForm({
+                                scope: $scope,
+                                notifications: saved.notifications
+                            });
+                        }, function (err) {
+                            //otherwise show the notifications for the user being saved
+                            formHelper.showNotifications(saved);
+                        });
+                        vm.user = _.omit(saved, 'navigation');
+                        //restore
+                        vm.user.navigation = currentNav;
+                        setUserDisplayState();
+                        formatDatesToLocal(vm.user);
+                        vm.changePasswordModel.isChanging = false;
+                        //the user has a password if they are not states: Invited, NoCredentials
+                        vm.changePasswordModel.config.hasPassword = vm.user.userState !== 3 && vm.user.userState !== 4;
+                        vm.page.saveButtonState = 'success';
+                    }, function (err) {
+                        contentEditingHelper.handleSaveError({
+                            redirectOnFailure: false,
+                            err: err
+                        });
+                        //show any notifications
+                        if (err.data) {
+                            formHelper.showNotifications(err.data);
+                        }
+                        vm.page.saveButtonState = 'error';
+                    });
+                }
+            }
+            /**
+         * Used to emit the save event and await any async operations being performed by editor extensions
+         * @param {any} savedUser
+         */
+            function extendedSave(savedUser) {
+                //used to track any promises added by the event handlers to be awaited
+                var promises = [];
+                var args = {
+                    //getPromise: getPromise,
+                    user: savedUser,
+                    //a promise can be added by the event handler if the handler needs an async operation to be awaited
+                    addPromise: function (p) {
+                        promises.push(p);
+                    }
+                };
+                //emit the event
+                eventsService.emit('editors.user.editController.save', args);
+                //await all promises to complete
+                var resultPromise = $q.all(promises);
+                return resultPromise;
             }
             function goToPage(ancestor) {
                 $location.path(ancestor.path).search('subview', ancestor.subView);
@@ -17254,11 +17657,12 @@
                     vm.user.avatars = data;
                 });
             }
-            $scope.changeAvatar = function (files, event) {
+            function changeAvatar(files, event) {
                 if (files && files.length > 0) {
                     upload(files[0]);
                 }
-            };
+            }
+            ;
             function upload(file) {
                 vm.avatarFile.uploadProgress = 0;
                 Upload.upload({
@@ -17430,7 +17834,7 @@
     }());
     (function () {
         'use strict';
-        function UsersController($scope, $timeout, $location, usersResource, userGroupsResource, userService, localizationService, contentEditingHelper, usersHelper, formHelper, notificationsService, dateHelper) {
+        function UsersController($scope, $timeout, $location, $routeParams, usersResource, userGroupsResource, userService, localizationService, contentEditingHelper, usersHelper, formHelper, notificationsService, dateHelper) {
             var vm = this;
             var localizeSaving = localizationService.localize('general_saving');
             vm.page = {};
@@ -17556,6 +17960,11 @@
             function init() {
                 vm.usersOptions.orderBy = 'Name';
                 vm.usersOptions.orderDirection = 'Ascending';
+                if ($routeParams.create) {
+                    setUsersViewState('createUser');
+                } else if ($routeParams.invite) {
+                    setUsersViewState('inviteUser');
+                }
                 // Get users
                 getUsers();
                 // Get user groups
@@ -17593,6 +18002,14 @@
             function setUsersViewState(state) {
                 if (state === 'createUser') {
                     clearAddUserForm();
+                    $location.search('create', 'true');
+                    $location.search('invite', null);
+                } else if (state === 'inviteUser') {
+                    $location.search('create', null);
+                    $location.search('invite', 'true');
+                } else if (state === 'overview') {
+                    $location.search('create', null);
+                    $location.search('invite', null);
                 }
                 vm.usersViewState = state;
             }
