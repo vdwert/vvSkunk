@@ -9307,8 +9307,16 @@
             convertToLocalMomentTime: function (strVal, serverOffsetMinutes) {
                 //get the formatted offset time in HH:mm (server time offset is in minutes)
                 var formattedOffset = (serverOffsetMinutes > 0 ? '+' : '-') + moment().startOf('day').minutes(Math.abs(serverOffsetMinutes)).format('HH:mm');
-                //convert to the iso string format
-                var isoFormat = moment(strVal).format('YYYY-MM-DDTHH:mm:ss') + formattedOffset;
+                //if the string format already denotes that it's in "Roundtrip UTC" format (i.e. "2018-02-07T00:20:38.173Z")
+                //otherwise known as https://en.wikipedia.org/wiki/ISO_8601. This is the default format returned from the server
+                //since that is the default formatter for newtonsoft.json. When it is in this format, we need to tell moment
+                //to load the date as UTC so it's not changed, otherwise load it normally
+                var isoFormat;
+                if (strVal.indexOf('T') > -1 && strVal.endsWith('Z')) {
+                    isoFormat = moment.utc(strVal).format('YYYY-MM-DDTHH:mm:ss') + formattedOffset;
+                } else {
+                    isoFormat = moment(strVal).format('YYYY-MM-DDTHH:mm:ss') + formattedOffset;
+                }
                 //create a moment with the iso format which will include the offset with the correct time
                 // then convert it to local time
                 return moment.parseZone(isoFormat).local();
@@ -9320,7 +9328,7 @@
                     var localOffset = new Date().getTimezoneOffset();
                     var serverTimeNeedsOffsetting = -serverOffset !== localOffset;
                     if (serverTimeNeedsOffsetting) {
-                        dateVal = dateHelper.convertToLocalMomentTime(date, serverOffset);
+                        dateVal = this.convertToLocalMomentTime(date, serverOffset);
                     } else {
                         dateVal = moment(date, 'YYYY-MM-DD HH:mm:ss');
                     }
@@ -9406,14 +9414,14 @@
                 return maxRowWidth - (imgsPerRow - 1) * margin;
             },
             /** 
-        This will determine the row/image height for the next collection of images which takes into account the 
-        ideal image count per row. It will check if a row can be filled with this ideal count and if not - if there
-        are additional images available to fill the row it will keep calculating until they fit.
-
-        It will return the calculated height and the number of images for the row.
-
-        targetHeight = optional;
-    */
+            This will determine the row/image height for the next collection of images which takes into account the 
+            ideal image count per row. It will check if a row can be filled with this ideal count and if not - if there
+            are additional images available to fill the row it will keep calculating until they fit.
+    
+            It will return the calculated height and the number of images for the row.
+    
+            targetHeight = optional;
+        */
             getRowHeightForImages: function (imgs, maxRowHeight, minDisplayHeight, maxRowWidth, idealImgPerRow, margin, targetHeight) {
                 var idealImages = imgs.slice(0, idealImgPerRow);
                 //get the target row width without margin
@@ -9622,20 +9630,20 @@
     function umbModelMapper() {
         return {
             /**
-     * @ngdoc function
-     * @name umbraco.services.umbModelMapper#convertToEntityBasic
-     * @methodOf umbraco.services.umbModelMapper
-     * @function
-     *
-     * @description
-     * Converts the source model to a basic entity model, it will throw an exception if there isn't enough data to create the model.
-     * @param {Object} source The source model
-     * @param {Number} source.id The node id of the model
-     * @param {String} source.name The node name
-     * @param {String} source.icon The models icon as a css class (.icon-doc)
-     * @param {Number} source.parentId The parentID, if no parent, set to -1
-     * @param {path} source.path comma-separated string of ancestor IDs (-1,1234,1782,1234)
-     */
+         * @ngdoc function
+         * @name umbraco.services.umbModelMapper#convertToEntityBasic
+         * @methodOf umbraco.services.umbModelMapper
+         * @function
+         *
+         * @description
+         * Converts the source model to a basic entity model, it will throw an exception if there isn't enough data to create the model.
+         * @param {Object} source The source model
+         * @param {Number} source.id The node id of the model
+         * @param {String} source.name The node name
+         * @param {String} source.icon The models icon as a css class (.icon-doc)
+         * @param {Number} source.parentId The parentID, if no parent, set to -1
+         * @param {path} source.path comma-separated string of ancestor IDs (-1,1234,1782,1234)
+         */
             /** This converts the source model to a basic entity model, it will throw an exception if there isn't enough data to create the model */
             convertToEntityBasic: function (source) {
                 var required = [
@@ -9696,15 +9704,15 @@
     function updateChecker($http, umbRequestHelper) {
         return {
             /**
-     * @ngdoc function
-     * @name umbraco.services.updateChecker#check
-     * @methodOf umbraco.services.updateChecker
-     * @function
-     *
-     * @description
-     * Called to load in the legacy tree js which is required on startup if a user is logged in or 
-     * after login, but cannot be called until they are authenticated which is why it needs to be lazy loaded. 
-     */
+         * @ngdoc function
+         * @name umbraco.services.updateChecker#check
+         * @methodOf umbraco.services.updateChecker
+         * @function
+         *
+         * @description
+         * Called to load in the legacy tree js which is required on startup if a user is logged in or 
+         * after login, but cannot be called until they are authenticated which is why it needs to be lazy loaded. 
+         */
             check: function () {
                 return umbRequestHelper.resourcePromise($http.get(umbRequestHelper.getApiUrl('updateCheckApiBaseUrl', 'GetCheck')), 'Failed to retrieve update status');
             }
@@ -9719,16 +9727,16 @@
     function umbPropEditorHelper() {
         return {
             /**
-     * @ngdoc function
-     * @name getImagePropertyValue
-     * @methodOf umbraco.services.umbPropertyEditorHelper
-     * @function    
-     *
-     * @description
-     * Returns the correct view path for a property editor, it will detect if it is a full virtual path but if not then default to the internal umbraco one
-     * 
-     * @param {string} input the view path currently stored for the property editor
-     */
+         * @ngdoc function
+         * @name getImagePropertyValue
+         * @methodOf umbraco.services.umbPropertyEditorHelper
+         * @function    
+         *
+         * @description
+         * Returns the correct view path for a property editor, it will detect if it is a full virtual path but if not then default to the internal umbraco one
+         * 
+         * @param {string} input the view path currently stored for the property editor
+         */
             getViewPath: function (input, isPreValue) {
                 var path = String(input);
                 if (path.startsWith('/')) {
