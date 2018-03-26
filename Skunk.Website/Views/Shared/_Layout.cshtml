@@ -1,7 +1,10 @@
 ﻿@inherits Umbraco.Web.Mvc.UmbracoViewPage
 @{
     Layout = null;
-    var contentSelection = Model.AncestorOrSelf("Home").Children(t => t.DocumentTypeAlias == "Content" || t.DocumentTypeAlias == "iFrame").Where("Visible");
+    var rootMenuContentSelection = Model.AncestorOrSelf("Home").Children(t => t.DocumentTypeAlias == "Content" || t.DocumentTypeAlias == "iFrame").Where("Visible");
+    var customMenuRoot = Model.AncestorsOrSelf()
+                        .FirstOrDefault(n => n.HasProperty("customMenuRoot") && n.GetPropertyValue<bool>("customMenuRoot"));
+    var customMenuContentSelection = customMenuRoot?.Children(t => t.DocumentTypeAlias == "Content" || t.DocumentTypeAlias == "iFrame").Where("Visible");
     var teamSelection = Model.AncestorOrSelf("Home").FirstChild(t => t.DocumentTypeAlias == "Teams").Children(t => t.DocumentTypeAlias == "Team").Where("Visible");
     var newsItemsSelection = Model.AncestorOrSelf("Home").FirstChild(t => t.DocumentTypeAlias == "NewsItems");
     var galleriesSelection = Model.AncestorOrSelf("Home").FirstChild(t => t.DocumentTypeAlias == "pictureGalleries").Children(t => t.DocumentTypeAlias == "pictureGallery").Where("Visible");
@@ -113,63 +116,45 @@
                                 <span class="icon-bar"></span>
                                 <span class="icon-bar"></span>
                             </button>
-                            <a class="navbar-brand" href="/">
-                                <span class="glyphicon glyphicon-home"></span>
-                            </a>
+                            @if (customMenuRoot == null)
+                            {
+                                <a class="navbar-brand" href="/">
+                                    <span class="glyphicon glyphicon-home"></span>
+                                </a>
+                            }
                         </div>
 
                         <!-- Collect the nav links, forms, and other content for toggling -->
                         <div class="collapse navbar-collapse" id="bs-example-navbar-collapse-1">
                             <ul class="nav navbar-nav">
-
-                                @if (teamSelection.Count() > 0)
+                                @if (customMenuRoot == null)
                                 {
-                                    <li class="dropdown">
-                                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Teams <span class="caret"></span></a>
-                                        <ul class="dropdown-menu">
-                                            @foreach (var item in teamSelection)
-                                            {
-                                                <li>
-                                                    <a href="@item.Url">@item.Name</a>
-                                                </li>
-                                            }
-                                        </ul>
-                                    </li>
-                                }
-
-                                @foreach (var item in contentSelection)
-                                {
-                                    if (item.Children.Count() > 0)
+                                    if (teamSelection.Count() > 0)
                                     {
                                         <li class="dropdown">
-                                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">@item.Name <span class="caret"></span></a>
+                                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Teams <span class="caret"></span></a>
                                             <ul class="dropdown-menu">
-                                                <li>
-                                                    <a href="@item.Url">@item.Name</a>
-                                                </li>
-                                                @foreach (var child in item.Children)
+                                                @foreach (var item in teamSelection)
                                                 {
                                                     <li>
-                                                        <a href="@child.Url">@child.Name</a>
+                                                        <a href="@item.Url">@item.Name</a>
                                                     </li>
                                                 }
                                             </ul>
                                         </li>
                                     }
-                                    else
-                                    {
-                                        <li>
-                                            <a href="@item.Url">@item.Name</a>
-                                        </li>
-                                    }
                                 }
 
-                                @if (galleriesSelection.Count() > 0)
+                                @if (customMenuRoot != null)
                                 {
+
                                     <li class="dropdown">
-                                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Galerij <span class="caret"></span></a>
+                                        <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">@customMenuRoot.Name <span class="caret"></span></a>
                                         <ul class="dropdown-menu">
-                                            @foreach (var item in galleriesSelection)
+                                            <li>
+                                                <a href="@customMenuRoot.Url">@customMenuRoot.Name</a>
+                                            </li>
+                                            @foreach (var item in customMenuContentSelection)
                                             {
                                                 <li>
                                                     <a href="@item.Url">@item.Name</a>
@@ -177,21 +162,66 @@
                                             }
                                         </ul>
                                     </li>
+
                                 }
-
-                                <li>
-                                    <a href="@activitiesSelection.Url">@activitiesSelection.Name</a>
-                                </li>
-
-                                <li>
-                                    <a href="@newsItemsSelection.Url">@newsItemsSelection.Name</a>
-                                </li>
-
-                                @if (!string.IsNullOrEmpty(Model.GetPropertyValue<string>("webshopUrl", true)))
+                                else
                                 {
+                                    foreach (var item in rootMenuContentSelection)
+                                    {
+                                        if (item.Children.Count() > 0)
+                                        {
+                                            <li class="dropdown">
+                                                <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">@item.Name <span class="caret"></span></a>
+                                                <ul class="dropdown-menu">
+                                                    <li>
+                                                        <a href="@item.Url">@item.Name</a>
+                                                    </li>
+                                                    @foreach (var child in item.Children)
+                                                    {
+                                                        <li>
+                                                            <a href="@child.Url">@child.Name</a>
+                                                        </li>
+                                                    }
+                                                </ul>
+                                            </li>
+                                        }
+                                        else
+                                        {
+                                            <li>
+                                                <a href="@item.Url">@item.Name</a>
+                                            </li>
+                                        }
+                                    }
+
+                                    if (galleriesSelection.Count() > 0)
+                                    {
+                                        <li class="dropdown">
+                                            <a href="#" class="dropdown-toggle" data-toggle="dropdown" role="button" aria-haspopup="true" aria-expanded="false">Galerij <span class="caret"></span></a>
+                                            <ul class="dropdown-menu">
+                                                @foreach (var item in galleriesSelection)
+                                                {
+                                                    <li>
+                                                        <a href="@item.Url">@item.Name</a>
+                                                    </li>
+                                                }
+                                            </ul>
+                                        </li>
+                                    }
+
                                     <li>
-                                        <a href="@Model.GetPropertyValue("webshopUrl", true)" target="_blank">Shop</a>
+                                        <a href="@activitiesSelection.Url">@activitiesSelection.Name</a>
                                     </li>
+
+                                    <li>
+                                        <a href="@newsItemsSelection.Url">@newsItemsSelection.Name</a>
+                                    </li>
+
+                                    if (!string.IsNullOrEmpty(Model.GetPropertyValue<string>("webshopUrl", true)))
+                                    {
+                                        <li>
+                                            <a href="@Model.GetPropertyValue("webshopUrl", true)" target="_blank">Shop</a>
+                                        </li>
+                                    }
                                 }
                             </ul>
                         </div><!-- /.navbar-collapse -->
