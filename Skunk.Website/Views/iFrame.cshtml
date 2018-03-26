@@ -1,0 +1,8 @@
+﻿@inherits Umbraco.Web.Mvc.UmbracoViewPage
+@{
+    Layout = "Shared/_Layout.cshtml";
+}
+
+<div class="content">
+    <iframe src="@Model.GetPropertyValue("iframeUrl")" frameborder="0" height="@Model.GetPropertyValue("iframeHeight")"></iframe>
+</div>

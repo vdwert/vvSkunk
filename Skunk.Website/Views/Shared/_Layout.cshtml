@@ -1,7 +1,7 @@
 ﻿@inherits Umbraco.Web.Mvc.UmbracoViewPage
 @{
     Layout = null;
-    var contentSelection = Model.AncestorOrSelf("Home").Children(t => t.DocumentTypeAlias == "Content").Where("Visible");
+    var contentSelection = Model.AncestorOrSelf("Home").Children(t => t.DocumentTypeAlias == "Content" || t.DocumentTypeAlias == "iFrame").Where("Visible");
     var teamSelection = Model.AncestorOrSelf("Home").FirstChild(t => t.DocumentTypeAlias == "Teams").Children(t => t.DocumentTypeAlias == "Team").Where("Visible");
     var newsItemsSelection = Model.AncestorOrSelf("Home").FirstChild(t => t.DocumentTypeAlias == "NewsItems");
     var galleriesSelection = Model.AncestorOrSelf("Home").FirstChild(t => t.DocumentTypeAlias == "pictureGalleries").Children(t => t.DocumentTypeAlias == "pictureGallery").Where("Visible");
@@ -51,53 +51,56 @@
 
     <div class="container page-background-color">
         <div class="row">
-            <div class="col-md-12">
-                <div id="carousel-vvskunk" class="carousel slide" data-ride="carousel">
-                    <!-- Indicators -->
-                    <ol class="carousel-indicators">
-                        @for (int imageIndex = 0; imageIndex <= carouselImages.Length - 1; imageIndex++)
-                        {
-                            if (imageIndex == 0)
+            @if (carouselImages.Length > 0)
+            {
+                <div class="col-md-12">
+                    <div id="carousel-vvskunk" class="carousel slide" data-ride="carousel">
+                        <!-- Indicators -->
+                        <ol class="carousel-indicators">
+                            @for (int imageIndex = 0; imageIndex <= carouselImages.Length - 1; imageIndex++)
                             {
-                                <li data-target="#carousel-vvskunk" data-slide-to="@imageIndex" class="active"></li>
+                                if (imageIndex == 0)
+                                {
+                                    <li data-target="#carousel-vvskunk" data-slide-to="@imageIndex" class="active"></li>
+                                }
+                                else
+                                {
+                                    <li data-target="#carousel-vvskunk" data-slide-to="@imageIndex"></li>
+                                }
                             }
-                            else
-                            {
-                                <li data-target="#carousel-vvskunk" data-slide-to="@imageIndex"></li>
-                            }
-                        }
-                    </ol>
+                        </ol>
 
-                    <!-- Wrapper for slides -->
-                    <div class="carousel-inner" role="listbox">
-                        @for (int imageIndex = 0; imageIndex <= carouselImages.Length - 1; imageIndex++)
-                        {
-                            if (imageIndex == 0)
+                        <!-- Wrapper for slides -->
+                        <div class="carousel-inner" role="listbox">
+                            @for (int imageIndex = 0; imageIndex <= carouselImages.Length - 1; imageIndex++)
                             {
-                                <div class="item active">
-                                    <img src="@Umbraco.Media(carouselImages[imageIndex]).Url?width=1140&height=364&quality=90">
-                                </div>
+                                if (imageIndex == 0)
+                                {
+                                    <div class="item active">
+                                        <img src="@Umbraco.Media(carouselImages[imageIndex]).Url?width=1140&height=364&quality=90">
+                                    </div>
+                                }
+                                else
+                                {
+                                    <div class="item">
+                                        <img src="@Umbraco.Media(carouselImages[imageIndex]).Url?width=1140&height=364&quality=90">
+                                    </div>
+                                }
                             }
-                            else
-                            {
-                                <div class="item">
-                                    <img src="@Umbraco.Media(carouselImages[imageIndex]).Url?width=1140&height=364&quality=90">
-                                </div>
-                            }
-                        }
+                        </div>
+
+                        <!-- Controls -->
+                        <a class="left carousel-control" href="#carousel-vvskunk" role="button" data-slide="prev">
+                            <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
+                            <span class="sr-only">Previous</span>
+                        </a>
+                        <a class="right carousel-control" href="#carousel-vvskunk" role="button" data-slide="next">
+                            <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
+                            <span class="sr-only">Next</span>
+                        </a>
                     </div>
-
-                    <!-- Controls -->
-                    <a class="left carousel-control" href="#carousel-vvskunk" role="button" data-slide="prev">
-                        <span class="glyphicon glyphicon-chevron-left" aria-hidden="true"></span>
-                        <span class="sr-only">Previous</span>
-                    </a>
-                    <a class="right carousel-control" href="#carousel-vvskunk" role="button" data-slide="next">
-                        <span class="glyphicon glyphicon-chevron-right" aria-hidden="true"></span>
-                        <span class="sr-only">Next</span>
-                    </a>
                 </div>
-            </div>
+            }
             <div class="col-md-12">
 
                 <nav class="navbar navbar-inverse" style="background-color: #000000; -moz-border-radius: 0px; -webkit-border-radius: 0px; border-radius: 0px; margin-bottom: 10px;">
@@ -253,32 +256,32 @@
 
     <script type="application/ld+json">
         [{
-            "@@context": "http://schema.org",
-            "@@type": "Organization",
-            "url": "http://www.vvskunk.nl/",
-            "logo": "http://www.vvskunk.nl/img/favico.png",
-            "contactPoint" : [{
-                "@@type" : "ContactPoint",
-                "email" : "info@vvskunk.nl",
-                "contactType" : "contact",
-                "areaServed": ["NL"],
-                "availableLanguage": ["Dutch"]
+        "@@context": "http://schema.org",
+        "@@type": "Organization",
+        "url": "http://www.vvskunk.nl/",
+        "logo": "http://www.vvskunk.nl/img/favico.png",
+        "contactPoint" : [{
+        "@@type" : "ContactPoint",
+        "email" : "info@vvskunk.nl",
+        "contactType" : "contact",
+        "areaServed": ["NL"],
+        "availableLanguage": ["Dutch"]
         }],
-            "sameAs" : [
-                "https://www.instagram.com/vv.skunk/",
-                "https://www.facebook.com/vvskunk/",
-                "https://twitter.com/vv_skunk_veghel/"
-            ]
+        "sameAs" : [
+        "https://www.instagram.com/vv.skunk/",
+        "https://www.facebook.com/vvskunk/",
+        "https://twitter.com/vv_skunk_veghel/"
+        ]
         },
         {
-            "@@context": "http://schema.org",
-            "@@type": "WebSite",
-            "url": "http://www.vvskunk.nl",
-            "potentialAction": {
-                "@@type": "SearchAction",
-                "target": "http://www.vvskunk.nl/zoeken/?searchTerm={search_term_string}",
-                "query-input": "required name=search_term_string"
-            }
+        "@@context": "http://schema.org",
+        "@@type": "WebSite",
+        "url": "http://www.vvskunk.nl",
+        "potentialAction": {
+        "@@type": "SearchAction",
+        "target": "http://www.vvskunk.nl/zoeken/?searchTerm={search_term_string}",
+        "query-input": "required name=search_term_string"
+        }
         }]
     </script>
 
