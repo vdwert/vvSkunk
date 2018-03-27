@@ -6669,6 +6669,8 @@
             folderName: '',
             creatingFolder: false
         };
+        var disableTemplates = Umbraco.Sys.ServerVariables.features.disabledFeatures.disableTemplates;
+        $scope.model.disableTemplates = disableTemplates;
         var node = $scope.dialogOptions.currentNode, localizeCreateFolder = localizationService.localize('defaultdialog_createFolder');
         $scope.showCreateFolder = function () {
             $scope.model.creatingFolder = true;
@@ -6701,12 +6703,15 @@
                 });
             }
         };
-        $scope.createDocType = function () {
-            $location.search('create', null);
-            $location.search('notemplate', null);
-            $location.path('/settings/documenttypes/edit/' + node.id).search('create', 'true');
-            navigationService.hideMenu();
-        };
+        // Disabling logic for creating document type with template if disableTemplates is set to true
+        if (!disableTemplates) {
+            $scope.createDocType = function () {
+                $location.search('create', null);
+                $location.search('notemplate', null);
+                $location.path('/settings/documenttypes/edit/' + node.id).search('create', 'true');
+                navigationService.hideMenu();
+            };
+        }
         $scope.createComponent = function () {
             $location.search('create', null);
             $location.search('notemplate', null);
@@ -6767,13 +6772,8 @@
             var vm = this;
             var localizeSaving = localizationService.localize('general_saving');
             var evts = [];
-            vm.save = save;
-            vm.currentNode = null;
-            vm.contentType = {};
-            vm.page = {};
-            vm.page.loading = false;
-            vm.page.saveButtonState = 'init';
-            vm.page.navigation = [
+            var disableTemplates = Umbraco.Sys.ServerVariables.features.disabledFeatures.disableTemplates;
+            var buttons = [
                 {
                     'name': localizationService.localize('general_design'),
                     'alias': 'design',
@@ -6800,6 +6800,14 @@
                     'view': 'views/documenttypes/views/templates/templates.html'
                 }
             ];
+            vm.save = save;
+            vm.currentNode = null;
+            vm.contentType = {};
+            vm.page = {};
+            vm.page.loading = false;
+            vm.page.saveButtonState = 'init';
+            vm.page.navigation = [];
+            loadButtons();
             vm.page.keyboardShortcutsOverview = [
                 {
                     'name': localizationService.localize('main_sections'),
@@ -6969,6 +6977,14 @@
                     syncTreeNode(vm.contentType, dt.path, true);
                     vm.page.loading = false;
                 });
+            }
+            function loadButtons() {
+                angular.forEach(buttons, function (val, index) {
+                    if (disableTemplates === true && val.alias === 'templates') {
+                        buttons.splice(index, 1);
+                    }
+                });
+                vm.page.navigation = buttons;
             }
             /* ---------- SAVE ---------- */
             function save() {
@@ -10097,6 +10113,9 @@
         }
         angular.module('umbraco').controller('Umbraco.Editors.PartialViews.EditController', PartialViewsEditController);
     }());
+    angular.module('umbraco').controller('Umbraco.PrevalueEditors.BooleanController', function ($scope) {
+        $scope.htmlId = 'bool-' + String.CreateGuid();
+    });
     function imageFilePickerController($scope) {
         $scope.add = function () {
             $scope.mediaPickerOverlay = {
@@ -10227,6 +10246,7 @@
         //NOTE: We need to make each item an object, not just a string because you cannot 2-way bind to a primitive.
         $scope.newItem = '';
         $scope.hasError = false;
+        $scope.focusOnNew = false;
         if (!angular.isArray($scope.model.value)) {
             //make an array from the dictionary
             var items = [];
@@ -10257,6 +10277,7 @@
                     $scope.model.value.push({ value: $scope.newItem });
                     $scope.newItem = '';
                     $scope.hasError = false;
+                    $scope.focusOnNew = true;
                     return;
                 }
             }
@@ -10281,6 +10302,11 @@
                     $scope.model.value.splice(originalIndex, 1);
                     $scope.model.value.splice(newIndex, 0, movedElement);
                 }
+            }
+        };
+        $scope.createNew = function (event) {
+            if (event.keyCode == 13) {
+                $scope.add(event);
             }
         };
         function getElementIndexByPrevalueText(value) {
@@ -10608,7 +10634,7 @@
             initActiveColor();
         }
         $scope.toggleItem = function (color) {
-            var currentColor = $scope.model.value.hasOwnProperty('value') ? $scope.model.value.value : $scope.model.value;
+            var currentColor = $scope.model.value && $scope.model.value.hasOwnProperty('value') ? $scope.model.value.value : $scope.model.value;
             var newColor;
             if (currentColor === color.value) {
                 // deselect
@@ -11298,6 +11324,77 @@
             }
         }
     });
+    angular.module('umbraco').controller('Umbraco.PropertyEditors.DropdownFlexibleController', function ($scope) {
+        //setup the default config
+        var config = {
+            items: [],
+            multiple: false
+        };
+        //map the user config
+        angular.extend(config, $scope.model.config);
+        //map back to the model
+        $scope.model.config = config;
+        function convertArrayToDictionaryArray(model) {
+            //now we need to format the items in the dictionary because we always want to have an array
+            var newItems = [];
+            for (var i = 0; i < model.length; i++) {
+                newItems.push({
+                    id: model[i],
+                    sortOrder: 0,
+                    value: model[i]
+                });
+            }
+            return newItems;
+        }
+        function convertObjectToDictionaryArray(model) {
+            //now we need to format the items in the dictionary because we always want to have an array
+            var newItems = [];
+            var vals = _.values($scope.model.config.items);
+            var keys = _.keys($scope.model.config.items);
+            for (var i = 0; i < vals.length; i++) {
+                var label = vals[i].value ? vals[i].value : vals[i];
+                newItems.push({
+                    id: keys[i],
+                    sortOrder: vals[i].sortOrder,
+                    value: label
+                });
+            }
+            return newItems;
+        }
+        $scope.updateSingleDropdownValue = function () {
+            $scope.model.value = [$scope.model.singleDropdownValue];
+        };
+        if (angular.isArray($scope.model.config.items)) {
+            //PP: I dont think this will happen, but we have tests that expect it to happen..
+            //if array is simple values, convert to array of objects
+            if (!angular.isObject($scope.model.config.items[0])) {
+                $scope.model.config.items = convertArrayToDictionaryArray($scope.model.config.items);
+            }
+        } else if (angular.isObject($scope.model.config.items)) {
+            $scope.model.config.items = convertObjectToDictionaryArray($scope.model.config.items);
+        } else {
+            throw 'The items property must be either an array or a dictionary';
+        }
+        //sort the values
+        $scope.model.config.items.sort(function (a, b) {
+            return a.sortOrder > b.sortOrder ? 1 : b.sortOrder > a.sortOrder ? -1 : 0;
+        });
+        //now we need to check if the value is null/undefined, if it is we need to set it to "" so that any value that is set
+        // to "" gets selected by default
+        if ($scope.model.value === null || $scope.model.value === undefined) {
+            if ($scope.model.config.multiple) {
+                $scope.model.value = [];
+            } else {
+                $scope.model.value = '';
+            }
+        }
+        // if we run in single mode we'll store the value in a local variable
+        // so we can pass an array as the model as our PropertyValueEditor expects that
+        $scope.model.singleDropdownValue = '';
+        if ($scope.model.config.multiple === '0') {
+            $scope.model.singleDropdownValue = Array.isArray($scope.model.value) ? $scope.model.value[0] : $scope.model.value;
+        }
+    });
     /** A drop down list or multi value select list based on an entity type, this can be re-used for any entity types */
     function entityPicker($scope, entityResource) {
         //set the default to DocumentType
@@ -11443,6 +11540,8 @@
                 // in the description of this controller, it states that this value isn't actually used for persistence,
                 // but we need to set it so that the editor and the server can detect that it's been changed, and it is used for validation.
                 $scope.model.value = { selectedFiles: newVal.trimEnd(',') };
+                //need to explicity setDirty here as file upload field can't track dirty & we can't use the fileCount (hidden field/model)
+                $scope.propertyForm.$setDirty();
             });
         });
         //listen for when the model value has changed
@@ -11465,22 +11564,20 @@
     ;
     angular.module('umbraco').controller('Umbraco.PropertyEditors.FileUploadController', fileUploadController).run(function (mediaHelper, umbRequestHelper, assetsService) {
         if (mediaHelper && mediaHelper.registerFileResolver) {
-            assetsService.load(['lib/moment/moment-with-locales.js']).then(function () {
-                //NOTE: The 'entity' can be either a normal media entity or an "entity" returned from the entityResource
-                // they contain different data structures so if we need to query against it we need to be aware of this.
-                mediaHelper.registerFileResolver('Umbraco.UploadField', function (property, entity, thumbnail) {
-                    if (thumbnail) {
-                        if (mediaHelper.detectIfImageByExtension(property.value)) {
-                            //get default big thumbnail from image processor
-                            var thumbnailUrl = property.value + '?rnd=' + moment(entity.updateDate).format('YYYYMMDDHHmmss') + '&width=500&animationprocessmode=first';
-                            return thumbnailUrl;
-                        } else {
-                            return null;
-                        }
+            //NOTE: The 'entity' can be either a normal media entity or an "entity" returned from the entityResource
+            // they contain different data structures so if we need to query against it we need to be aware of this.
+            mediaHelper.registerFileResolver('Umbraco.UploadField', function (property, entity, thumbnail) {
+                if (thumbnail) {
+                    if (mediaHelper.detectIfImageByExtension(property.value)) {
+                        //get default big thumbnail from image processor
+                        var thumbnailUrl = property.value + '?rnd=' + moment(entity.updateDate).format('YYYYMMDDHHmmss') + '&width=500&animationprocessmode=first';
+                        return thumbnailUrl;
                     } else {
-                        return property.value;
+                        return null;
                     }
-                });
+                } else {
+                    return property.value;
+                }
             });
         }
     });
@@ -13331,6 +13428,7 @@
             vm.dragLeave = dragLeave;
             vm.onFilesQueue = onFilesQueue;
             vm.onUploadComplete = onUploadComplete;
+            markAsSensitive();
             function activate() {
                 if ($scope.entityType === 'media') {
                     mediaTypeHelper.getAllowedImagetypes(vm.nodeId).then(function (types) {
@@ -13373,6 +13471,18 @@
             }
             function onUploadComplete() {
                 $scope.getContent($scope.contentId);
+            }
+            function markAsSensitive() {
+                angular.forEach($scope.options.includeProperties, function (option) {
+                    option.isSensitive = false;
+                    angular.forEach($scope.items, function (item) {
+                        angular.forEach(item.properties, function (property) {
+                            if (option.alias === property.alias) {
+                                option.isSensitive = property.isSensitive;
+                            }
+                        });
+                    });
+                });
             }
             activate();
         }
@@ -14217,6 +14327,7 @@
                 // init the md editor after this digest because the DOM needs to be ready first
                 // so run the init on a timeout
                 $timeout(function () {
+                    $scope.markdownEditorInitComplete = false;
                     var converter2 = new Markdown.Converter();
                     var editor2 = new Markdown.Editor(converter2, '-' + $scope.model.alias);
                     editor2.run();
@@ -14228,7 +14339,12 @@
                     editor2.hooks.set('onPreviewRefresh', function () {
                         // We must manually update the model as there is no way to hook into the markdown editor events without exstensive edits to the library.
                         if ($scope.model.value !== $('textarea', $element).val()) {
-                            angularHelper.getCurrentForm($scope).$setDirty();
+                            if ($scope.markdownEditorInitComplete) {
+                                //only set dirty after init load to avoid "unsaved" dialogue when we don't want it
+                                angularHelper.getCurrentForm($scope).$setDirty();
+                            } else {
+                                $scope.markdownEditorInitComplete = true;
+                            }
                             $scope.model.value = $('textarea', $element).val();
                         }
                     });
@@ -15470,6 +15586,12 @@
                                 } catch (e) {
                                 }
                             }
+                            if (val === 'true') {
+                                tinyMceConfig.customConfig[i] = true;
+                            }
+                            if (val === 'false') {
+                                tinyMceConfig.customConfig[i] = false;
+                            }
                         }
                     }
                     angular.extend(baseLineConfigObj, tinyMceConfig.customConfig);
@@ -15610,7 +15732,8 @@
                 //this is instead of doing a watch on the model.value = faster
                 $scope.model.onValueChanged = function (newVal, oldVal) {
                     //update the display val again if it has changed from the server;
-                    tinyMceEditor.setContent(newVal, { format: 'raw' });
+                    //uses an empty string in the editor when the value is null
+                    tinyMceEditor.setContent(newVal || '', { format: 'raw' });
                     //we need to manually fire this event since it is only ever fired based on loading from the DOM, this
                     // is required for our plugins listening to this event to execute
                     tinyMceEditor.fire('LoadContent', null);
@@ -15812,7 +15935,6 @@
             $scope.model.config.ticksPositions = _.map($scope.model.config.ticksPositions.split(','), function (item) {
                 return parseInt(item.trim());
             });
-            console.log($scope.model.config.ticksPositions);
         }
         if (!$scope.model.config.ticksLabels) {
             $scope.model.config.ticksLabels = [];

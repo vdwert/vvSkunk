@@ -2524,6 +2524,7 @@ Use this directive to render a button with a dropdown of alternative actions.
                 var evts = [];
                 var isInfoTab = false;
                 scope.publishStatus = {};
+                scope.disableTemplates = Umbraco.Sys.ServerVariables.features.disabledFeatures.disableTemplates;
                 function onInit() {
                     scope.allowOpen = true;
                     scope.datePickerConfig = {
@@ -2553,7 +2554,7 @@ Use this directive to render a button with a dropdown of alternative actions.
                 };
                 scope.openDocumentType = function (documentType) {
                     var url = '/settings/documenttypes/edit/' + documentType.id;
-                    $location.path(url);
+                    $location.url(url);
                 };
                 scope.updateTemplate = function (templateAlias) {
                     // update template value
@@ -4760,6 +4761,12 @@ will override element type to textarea and add own attribute ngModel tied to jso
                                             }
                                         }
                                     }
+                                    if (val === 'true') {
+                                        tinyMceConfig.customConfig[i] = true;
+                                    }
+                                    if (val === 'false') {
+                                        tinyMceConfig.customConfig[i] = false;
+                                    }
                                 }
                                 angular.extend(baseLineConfigObj, tinyMceConfig.customConfig);
                             }
@@ -5755,7 +5762,6 @@ Use this directive to construct a title. Recommended to use it inside an {@link 
 </pre>
 
 <h1>General Options</h1>
-Lorem ipsum dolor sit amet..
 <table>
     <thead>
         <tr>
@@ -5770,7 +5776,7 @@ Lorem ipsum dolor sit amet..
         <td>Set the title of the overlay.</td>
     </tr>
     <tr>
-        <td>model.subTitle</td>
+        <td>model.subtitle</td>
         <td>String</td>
         <td>Set the subtitle of the overlay.</td>
     </tr>
@@ -6160,10 +6166,12 @@ Opens an overlay to show a custom YSOD. </br>
                                     'BUTTON'
                                 ];
                                 var submitOnEnter = document.activeElement.hasAttribute('overlay-submit-on-enter');
+                                var submitOnEnterValue = submitOnEnter ? document.activeElement.getAttribute('overlay-submit-on-enter') : '';
                                 if (clickableElements.indexOf(activeElementType) === 0) {
                                     document.activeElement.click();
                                     event.preventDefault();
                                 } else if (activeElementType === 'TEXTAREA' && !submitOnEnter) {
+                                } else if (submitOnEnter && submitOnEnterValue === 'false') {
                                 } else {
                                     scope.$apply(function () {
                                         scope.submitForm(scope.model);
@@ -12213,11 +12221,15 @@ Use this directive to render a user group preview, where you can see the permiss
             restrict: 'A',
             require: 'ngModel',
             link: function (scope, elm, attrs, ctrl) {
-                elm.focus(function () {
-                    scope.$watch(function () {
-                        ctrl.$pristine = false;
-                    });
-                });
+                var alwaysFalse = {
+                    get: function () {
+                        return false;
+                    },
+                    set: function () {
+                    }
+                };
+                Object.defineProperty(ctrl, '$pristine', alwaysFalse);
+                Object.defineProperty(ctrl, '$dirty', alwaysFalse);
             }
         };
     }

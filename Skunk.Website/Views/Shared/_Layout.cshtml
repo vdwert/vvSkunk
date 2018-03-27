@@ -116,7 +116,7 @@
                                 <span class="icon-bar"></span>
                                 <span class="icon-bar"></span>
                             </button>
-                            @if (customMenuRoot == null)
+                            @if (Model.GetPropertyValue<bool>("showHomeInMenu", true, true))
                             {
                                 <a class="navbar-brand" href="/">
                                     <span class="glyphicon glyphicon-home"></span>
