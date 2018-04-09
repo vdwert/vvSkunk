@@ -580,14 +580,12 @@
                     asset.state = 'loading';
                     LazyLoad.css(appendRnd(path), function () {
                         if (!scope) {
-                            asset.state = 'loaded';
-                            asset.deferred.resolve(true);
-                        } else {
-                            asset.state = 'loaded';
-                            angularHelper.safeApply(scope, function () {
-                                asset.deferred.resolve(true);
-                            });
+                            scope = $rootScope;
                         }
+                        asset.state = 'loaded';
+                        angularHelper.safeApply(scope, function () {
+                            asset.deferred.resolve(true);
+                        });
                     });
                 } else if (asset.state === 'loaded') {
                     asset.deferred.resolve(true);
@@ -618,14 +616,12 @@
                     asset.state = 'loading';
                     LazyLoad.js(appendRnd(path), function () {
                         if (!scope) {
-                            asset.state = 'loaded';
-                            asset.deferred.resolve(true);
-                        } else {
-                            asset.state = 'loaded';
-                            angularHelper.safeApply(scope, function () {
-                                asset.deferred.resolve(true);
-                            });
+                            scope = $rootScope;
                         }
+                        asset.state = 'loaded';
+                        angularHelper.safeApply(scope, function () {
+                            asset.deferred.resolve(true);
+                        });
                     });
                 } else if (asset.state === 'loaded') {
                     asset.deferred.resolve(true);
@@ -673,8 +669,7 @@
                             asset.state = 'loading';
                             assets.push(asset);
                         }
-                        //we need to always push to the promises collection to monitor correct
-                        //execution
+                        //we need to always push to the promises collection to monitor correct execution
                         promises.push(asset.deferred.promise);
                     }
                 });
@@ -690,8 +685,7 @@
                 function assetLoaded(asset) {
                     asset.state = 'loaded';
                     if (!scope) {
-                        asset.deferred.resolve(true);
-                        return;
+                        scope = $rootScope;
                     }
                     angularHelper.safeApply(scope, function () {
                         asset.deferred.resolve(true);
@@ -9294,7 +9288,6 @@
             },
             /** Loads the Moment.js Locale for the current user. */
             loadMomentLocaleForCurrentUser: function () {
-                var deferred = $q.defer();
                 function loadLocales(currentUser, supportedLocales) {
                     var locale = currentUser.locale.toLowerCase();
                     if (locale !== 'en-us') {
@@ -9308,21 +9301,22 @@
                                 localeUrls.push('lib/moment/' + majorLocale);
                             }
                         }
-                        assetsService.load(localeUrls).then(function () {
-                            deferred.resolve(localeUrls);
-                        });
+                        return assetsService.load(localeUrls, $rootScope);
                     } else {
-                        deferred.resolve(['']);
+                        //return a noop promise
+                        var deferred = $q.defer();
+                        var promise = deferred.promise;
+                        deferred.resolve(true);
+                        return promise;
                     }
                 }
                 var promises = {
                     currentUser: this.getCurrentUser(),
                     supportedLocales: javascriptLibraryService.getSupportedLocalesForMoment()
                 };
-                $q.all(promises).then(function (values) {
-                    loadLocales(values.currentUser, values.supportedLocales);
+                return $q.all(promises).then(function (values) {
+                    return loadLocales(values.currentUser, values.supportedLocales);
                 });
-                return deferred.promise;
             },
             /** Called whenever a server request is made that contains a x-umb-user-seconds response header for which we can update the user's remaining timeout seconds */
             setUserTimeout: function (newTimeout) {

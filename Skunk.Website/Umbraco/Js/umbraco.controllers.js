@@ -480,7 +480,7 @@
     //register it
     angular.module('umbraco').controller('Umbraco.DashboardController', DashboardController);
     angular.module('umbraco').controller('Umbraco.Dialogs.ApprovedColorPickerController', function ($scope, $http, umbPropEditorHelper, assetsService) {
-        assetsService.loadJs('lib/cssparser/cssparser.js').then(function () {
+        assetsService.loadJs('lib/cssparser/cssparser.js', $scope).then(function () {
             var cssPath = $scope.dialogData.cssPath;
             $scope.cssClass = $scope.dialogData.cssClass;
             $scope.classes = [];
@@ -492,8 +492,8 @@
                 $scope.classes = parser.parse(data, false, false).cssRules;
                 $scope.classes.splice(0, 0, 'noclass');
             });
-            assetsService.loadCss('/App_Plugins/Lecoati.uSky.Grid/lib/uSky.Grid.ApprovedColorPicker.css');
-            assetsService.loadCss(cssPath);
+            assetsService.loadCss('/App_Plugins/Lecoati.uSky.Grid/lib/uSky.Grid.ApprovedColorPicker.css', $scope);
+            assetsService.loadCss(cssPath, $scope);
         });
     });
     function ContentEditDialogController($scope, editorState, $routeParams, $q, $timeout, $window, appState, contentResource, entityResource, navigationService, notificationsService, angularHelper, serverValidationManager, contentEditingHelper, treeService, fileManager, formHelper, umbRequestHelper, umbModelMapper, $http) {
@@ -5669,7 +5669,7 @@
         };
     }
     angular.module('umbraco').controller('Umbraco.Dashboard.StartupVideosController', startUpVideosDashboardController);
-    function startUpDynamicContentController($timeout, dashboardResource, assetsService, tourService, eventsService) {
+    function startUpDynamicContentController($timeout, $scope, dashboardResource, assetsService, tourService, eventsService) {
         var vm = this;
         var evts = [];
         vm.loading = true;
@@ -5739,7 +5739,7 @@
             });
         }));
         //proxy remote css through the local server
-        assetsService.loadCss(dashboardResource.getRemoteDashboardCssUrl('content'));
+        assetsService.loadCss(dashboardResource.getRemoteDashboardCssUrl('content'), $scope);
         dashboardResource.getRemoteDashboardContent('content').then(function (data) {
             vm.loading = false;
             //test if we have received valid data
@@ -9600,7 +9600,7 @@
             /* Local functions */
             function init() {
                 //we need to load this somewhere, for now its here.
-                assetsService.loadCss('lib/ace-razor-mode/theme/razor_chrome.css');
+                assetsService.loadCss('lib/ace-razor-mode/theme/razor_chrome.css', $scope);
                 if ($routeParams.create) {
                     var snippet = 'Empty';
                     if ($routeParams.snippet) {
@@ -9971,7 +9971,7 @@
             /* Local functions */
             function init() {
                 //we need to load this somewhere, for now its here.
-                assetsService.loadCss('lib/ace-razor-mode/theme/razor_chrome.css');
+                assetsService.loadCss('lib/ace-razor-mode/theme/razor_chrome.css', $scope);
                 if ($routeParams.create) {
                     var snippet = 'Empty';
                     if ($routeParams.snippet) {
@@ -10820,7 +10820,7 @@
             }
         };
         //load the separate css for the editor to avoid it blocking our js loading
-        assetsService.loadCss('lib/spectrum/spectrum.css');
+        assetsService.loadCss('lib/spectrum/spectrum.css', $scope);
     });
     //this controller simply tells the dialogs service to open a mediaPicker window
     //with a specified callback, this callback will receive an object with a selection on it
@@ -11206,7 +11206,7 @@
         }
         //get the current user to see if we can localize this picker
         userService.getCurrentUser().then(function (user) {
-            assetsService.loadCss('lib/datetimepicker/bootstrap-datetimepicker.min.css').then(function () {
+            assetsService.loadCss('lib/datetimepicker/bootstrap-datetimepicker.min.css', $scope).then(function () {
                 var filesToLoad = ['lib/datetimepicker/bootstrap-datetimepicker.js'];
                 $scope.model.config.language = user.locale;
                 assetsService.load(filesToLoad, $scope).then(function () {
@@ -11605,7 +11605,7 @@
         });
     });
     angular.module('umbraco').controller('Umbraco.PropertyEditors.GoogleMapsController', function ($element, $rootScope, $scope, notificationsService, dialogService, assetsService, $log, $timeout) {
-        assetsService.loadJs('https://www.google.com/jsapi').then(function () {
+        assetsService.loadJs('https://www.google.com/jsapi', $scope).then(function () {
             google.load('maps', '3', {
                 callback: initMap,
                 other_params: 'sensor=false'
@@ -14351,7 +14351,7 @@
                 }, 200);
             });
             //load the seperat css for the editor to avoid it blocking our js loading TEMP HACK
-            assetsService.loadCss('lib/markdown/markdown.css');
+            assetsService.loadCss('lib/markdown/markdown.css', $scope);
         });
     }
     angular.module('umbraco').controller('Umbraco.PropertyEditors.MarkdownEditorController', MarkdownEditorController);
@@ -15858,7 +15858,7 @@
             unsubscribe();
         });
         // load TinyMCE skin which contains css for font-icons
-        assetsService.loadCss('lib/tinymce/skins/umbraco/skin.min.css');
+        assetsService.loadCss('lib/tinymce/skins/umbraco/skin.min.css', $scope);
     });
     function sliderController($scope, $log, $element, assetsService, angularHelper) {
         //configure some defaults
@@ -16033,15 +16033,15 @@
             };
         });
         //load the separate css for the editor to avoid it blocking our js loading
-        assetsService.loadCss('lib/slider/bootstrap-slider.css');
-        assetsService.loadCss('lib/slider/bootstrap-slider-custom.css');
+        assetsService.loadCss('lib/slider/bootstrap-slider.css', $scope);
+        assetsService.loadCss('lib/slider/bootstrap-slider-custom.css', $scope);
     }
     angular.module('umbraco').controller('Umbraco.PropertyEditors.SliderController', sliderController);
     angular.module('umbraco').controller('Umbraco.PropertyEditors.TagsController', function ($rootScope, $scope, $log, assetsService, umbRequestHelper, angularHelper, $timeout, $element) {
         var $typeahead;
         $scope.isLoading = true;
         $scope.tagToAdd = '';
-        assetsService.loadJs('lib/typeahead.js/typeahead.bundle.min.js').then(function () {
+        assetsService.loadJs('lib/typeahead.js/typeahead.bundle.min.js', $scope).then(function () {
             $scope.isLoading = false;
             //load current value
             if ($scope.model.value) {
@@ -16476,7 +16476,7 @@
             /* Local functions */
             function init() {
                 //we need to load this somewhere, for now its here.
-                assetsService.loadCss('lib/ace-razor-mode/theme/razor_chrome.css');
+                assetsService.loadCss('lib/ace-razor-mode/theme/razor_chrome.css', $scope);
                 if ($routeParams.create) {
                     codefileResource.getScaffold('scripts', $routeParams.id).then(function (script) {
                         ready(script, false);
@@ -16681,7 +16681,7 @@
             };
             vm.init = function () {
                 //we need to load this somewhere, for now its here.
-                assetsService.loadCss('lib/ace-razor-mode/theme/razor_chrome.css');
+                assetsService.loadCss('lib/ace-razor-mode/theme/razor_chrome.css', $scope);
                 //load templates - used in the master template picker
                 templateResource.getAll().then(function (templates) {
                     vm.templates = templates;
