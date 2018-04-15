@@ -10876,6 +10876,8 @@
             showOpenButton: false,
             showEditButton: false,
             showPathOnHover: false,
+            maxNumber: 1,
+            minNumber: 0,
             startNode: {
                 query: '',
                 type: 'content',
