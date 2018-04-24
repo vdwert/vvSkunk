@@ -15007,11 +15007,6 @@
                 });
             };
             var notSupported = [
-                'Umbraco.CheckBoxList',
-                'Umbraco.DropDownMultiple',
-                'Umbraco.MacroContainer',
-                'Umbraco.RadioButtonList',
-                'Umbraco.MultipleTextstring',
                 'Umbraco.Tags',
                 'Umbraco.UploadField',
                 'Umbraco.ImageCropper'
@@ -15656,7 +15651,7 @@
                         }
                     });
                     editor.on('ObjectResized', function (e) {
-                        var qs = '?width=' + e.width + '&height=' + e.height;
+                        var qs = '?width=' + e.width + '&height=' + e.height + '&mode=max';
                         var srcAttr = $(e.target).attr('src');
                         var path = srcAttr.split('?')[0];
                         $(e.target).attr('data-mce-src', path + qs);
