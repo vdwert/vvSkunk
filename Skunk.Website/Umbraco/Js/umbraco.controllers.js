@@ -850,11 +850,18 @@
                 // if a link exists, get the properties to build the anchor name list
                 contentResource.getById(id).then(function (resp) {
                     $scope.anchorValues = tinyMceService.getAnchorNames(JSON.stringify(resp.properties));
-                    $scope.model.target.url = resp.urls[0];
+                    $scope.target.url = resp.urls[0];
                 });
             } else if ($scope.target.url.length) {
                 // a url but no id/udi indicates an external link - trim the url to remove the anchor/qs
-                $scope.target.url = $scope.model.url.substring(0, $scope.model.url.search(/(#|\?)/));
+                // only do the substring if there's a # or a ?
+                var indexOfAnchor = $scope.target.url.search(/(#|\?)/);
+                if (indexOfAnchor > -1) {
+                    // populate the anchor
+                    $scope.target.anchor = $scope.target.url.substring(indexOfAnchor);
+                    // then rewrite the model and populate the link
+                    $scope.target.url = $scope.target.url.substring(0, indexOfAnchor);
+                }
             }
         }
         if (dialogOptions.anchors) {
@@ -884,7 +891,7 @@
                 } else {
                     contentResource.getById(args.node.id).then(function (resp) {
                         $scope.anchorValues = tinyMceService.getAnchorNames(JSON.stringify(resp.properties));
-                        $scope.model.target.url = resp.urls[0];
+                        $scope.target.url = resp.urls[0];
                     });
                 }
                 if (!angular.isUndefined($scope.target.isMedia)) {
@@ -3191,7 +3198,6 @@
     //used for the media picker dialog
     angular.module('umbraco').controller('Umbraco.Overlays.LinkPickerController', function ($scope, eventsService, dialogService, entityResource, contentResource, mediaHelper, userService, localizationService, tinyMceService) {
         var dialogOptions = $scope.model;
-        var anchorPattern = /<a id=\\"(.*?)\\">/gi;
         var searchText = 'Search...';
         localizationService.localize('general_search').then(function (value) {
             searchText = value + '...';
@@ -3232,7 +3238,14 @@
                 });
             } else if ($scope.model.target.url.length) {
                 // a url but no id/udi indicates an external link - trim the url to remove the anchor/qs
-                $scope.model.target.url = $scope.model.target.url.substring(0, $scope.model.target.url.search(/(#|\?)/));
+                // only do the substring if there's a # or a ?
+                var indexOfAnchor = $scope.model.target.url.search(/(#|\?)/);
+                if (indexOfAnchor > -1) {
+                    // populate the anchor
+                    $scope.model.target.anchor = $scope.model.target.url.substring(indexOfAnchor);
+                    // then rewrite the model and populate the link
+                    $scope.model.target.url = $scope.model.target.url.substring(0, indexOfAnchor);
+                }
             }
         } else if (dialogOptions.anchors) {
             $scope.anchorValues = dialogOptions.anchors;
@@ -3806,7 +3819,14 @@
             $scope.model.selectedMemberGroup = id;
         }
         function selectMemberGroups(id) {
-            $scope.model.selectedMemberGroups.push(id);
+            var index = $scope.model.selectedMemberGroups.indexOf(id);
+            if (index === -1) {
+                // If the id does not exists in the array then add it
+                $scope.model.selectedMemberGroups.push(id);
+            } else {
+                // Otherwise we will remove it from the array instead
+                $scope.model.selectedMemberGroups.splice(index, 1);
+            }
         }
         /** Method used for selecting a node */
         function select(text, id) {

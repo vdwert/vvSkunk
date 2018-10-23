@@ -1041,7 +1041,7 @@
                     // if save button is alread the default don't change it just update the label
                     if (buttons.defaultButton && buttons.defaultButton.letter === 'A') {
                         buttons.defaultButton.labelKey = 'buttons_saveAndSchedule';
-                        return;
+                        return buttons;
                     }
                     if (buttons.defaultButton && buttons.subButtons && buttons.subButtons.length > 0) {
                         // save a copy of the default so we can push it to the sub buttons later
@@ -9437,6 +9437,12 @@
                     'value': 3,
                     'name': 'Invited',
                     'key': 'Invited',
+                    'color': 'warning'
+                },
+                {
+                    'value': 4,
+                    'name': 'Inactive',
+                    'key': 'Inactive',
                     'color': 'warning'
                 }
             ];

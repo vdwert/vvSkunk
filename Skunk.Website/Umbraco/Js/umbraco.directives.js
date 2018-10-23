@@ -2561,7 +2561,10 @@ Use this directive to render a button with a dropdown of alternative actions.
                 scope.publishStatus = {};
                 scope.disableTemplates = Umbraco.Sys.ServerVariables.features.disabledFeatures.disableTemplates;
                 function onInit() {
-                    scope.allowOpen = true;
+                    // If logged in user has access to the settings section
+                    // show the open anchors - if the user doesn't have 
+                    // access, documentType is null, see ContentModelMapper
+                    scope.allowOpen = scope.node.documentType !== null;
                     scope.datePickerConfig = {
                         pickDate: true,
                         pickTime: true,
@@ -2581,9 +2584,12 @@ Use this directive to render a button with a dropdown of alternative actions.
                     scope.documentType = scope.node.documentType;
                     // make sure dates are formatted to the user's locale
                     formatDatesToLocal();
-                    // Declare a fallback URL for the <umb-node-preview/> directive
-                    scope.previewOpenUrl = '#/settings/documenttypes/edit/' + scope.documentType.id;
+                    // Make sure to set the node status
                     setNodePublishStatus(scope.node);
+                    // Declare a fallback URL for the <umb-node-preview/> directive
+                    if (scope.documentType !== null) {
+                        scope.previewOpenUrl = '#/settings/documenttypes/edit/' + scope.documentType.id;
+                    }
                 }
                 scope.auditTrailPageChange = function (pageNumber) {
                     scope.auditTrailOptions.pageNumber = pageNumber;
@@ -5669,11 +5675,14 @@ Use this directive to construct a title. Recommended to use it inside an {@link 
             function link(scope, element, attrs, ctrl) {
                 var evts = [];
                 function onInit() {
-                    scope.allowOpenMediaType = true;
+                    // If logged in user has access to the settings section
+                    // show the open anchors - if the user doesn't have 
+                    // access, contentType is null, see MediaModelMapper
+                    scope.allowOpen = scope.node.contentType !== null;
                     // get document type details
                     scope.mediaType = scope.node.contentType;
-                    // get node url
-                    scope.nodeUrl = scope.node.mediaLink;
+                    // set the media link initially
+                    setMediaLink();
                     // make sure dates are formatted to the user's locale
                     formatDatesToLocal();
                 }
@@ -5683,6 +5692,9 @@ Use this directive to construct a title. Recommended to use it inside an {@link 
                         scope.node.createDateFormatted = dateHelper.getLocalDate(scope.node.createDate, currentUser.locale, 'LLL');
                         scope.node.updateDateFormatted = dateHelper.getLocalDate(scope.node.updateDate, currentUser.locale, 'LLL');
                     });
+                }
+                function setMediaLink() {
+                    scope.nodeUrl = scope.node.mediaLink;
                 }
                 scope.openMediaType = function (mediaType) {
                     // remove first "#" from url if it is prefixed else the path won't work
@@ -5697,6 +5709,9 @@ Use this directive to construct a title. Recommended to use it inside an {@link 
                     if (newValue === oldValue) {
                         return;
                     }
+                    // Update the media link
+                    setMediaLink();
+                    // Update the create and update dates
                     formatDatesToLocal();
                 });
                 //ensure to unregister from all events!
