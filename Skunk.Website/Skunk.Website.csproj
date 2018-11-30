@@ -541,6 +541,7 @@
     <Compile Include="App_Start\RouteConfig.cs" />
     <Compile Include="App_Start\RouteConstraints\QueryStringConstraint.cs" />
     <Compile Include="App_Start\UmbracoEventHandler.cs" />
+    <Compile Include="Controllers\GoogleHomeApiController.cs" />
     <Compile Include="Controllers\PictureGalleryController.cs" />
     <Compile Include="Controllers\SearchController.cs" />
     <Compile Include="Controllers\PlayerController.cs" />
