@@ -1,5 +1,8 @@
 ﻿using System.Web.Http;
+using System.Linq;
 using Umbraco.Web.WebApi;
+using Newtonsoft.Json.Linq;
+using Newtonsoft.Json;
 
 namespace Skunk.Website.Controllers
 {
@@ -7,105 +10,41 @@ namespace Skunk.Website.Controllers
     public class GoogleHomeApiController : UmbracoApiController
     {
         [HttpPost]
-        public IHttpActionResult Heren()
+        public IHttpActionResult Heren(JObject text)
         {
-            Rootobject o = new Rootobject();
-            o.fulfillmentText = "Frank Haver en Cas de Vreede";
+            var item = JsonConvert.DeserializeObject<Models.DialogRequest.GoogleDialogRequest>(text.ToString());
+            
 
-            return Json<Rootobject>(o);
+            var returnValue = item.queryResult.parameters.Team + ", ";
+            foreach (var child in Umbraco.TypedContent(1087).Children)
+            {
+                returnValue = returnValue + child.Name + ", ";
+            }
+
+            returnValue = returnValue.Trim();
+            returnValue = returnValue.TrimEnd(',');
+
+            Models.DialogResponse.GoogleDialogResponse response = new Models.DialogResponse.GoogleDialogResponse();
+            response.fulfillmentText = returnValue;
+            response.source = "www.vvskunk.nl";
+            response.payload = new Models.DialogResponse.Payload();
+            response.payload.google = new Models.DialogResponse.Google();
+            response.payload.google.expectUserResponse = false;
+            response.payload.google.richResponse = new Models.DialogResponse.Richresponse();
+            response.payload.google.richResponse.items = new Models.DialogResponse.Item[1];
+
+            Models.DialogResponse.Simpleresponse simpleresponse = new Models.DialogResponse.Simpleresponse();
+            simpleresponse.textToSpeech = returnValue;
+
+            Models.DialogResponse.Item responseItem = new Models.DialogResponse.Item();
+            responseItem.simpleResponse = simpleresponse;
+            response.payload.google.richResponse.items[0] = responseItem;
+
+            return Json<Models.DialogResponse.GoogleDialogResponse>(response);
         }
     }
 
 
-    public class Rootobject
-    {
-        public string fulfillmentText { get; set; }
-        //public Fulfillmentmessage[] fulfillmentMessages { get; set; }
-        //public string source { get; set; }
-        //public Payload payload { get; set; }
-        //public Outputcontext[] outputContexts { get; set; }
-        //public Followupeventinput followupEventInput { get; set; }
-    }
 
-    public class Payload
-    {
-        public Google google { get; set; }
-        public Facebook facebook { get; set; }
-        public Slack slack { get; set; }
-    }
-
-    public class Google
-    {
-        public bool expectUserResponse { get; set; }
-        public Richresponse richResponse { get; set; }
-    }
-
-    public class Richresponse
-    {
-        public Item[] items { get; set; }
-    }
-
-    public class Item
-    {
-        public Simpleresponse simpleResponse { get; set; }
-    }
-
-    public class Simpleresponse
-    {
-        public string textToSpeech { get; set; }
-    }
-
-    public class Facebook
-    {
-        public string text { get; set; }
-    }
-
-    public class Slack
-    {
-        public string text { get; set; }
-    }
-
-    public class Followupeventinput
-    {
-        public string name { get; set; }
-        public string languageCode { get; set; }
-        public Parameters parameters { get; set; }
-    }
-
-    public class Parameters
-    {
-        public string param { get; set; }
-    }
-
-    public class Fulfillmentmessage
-    {
-        public Card card { get; set; }
-    }
-
-    public class Card
-    {
-        public string title { get; set; }
-        public string subtitle { get; set; }
-        public string imageUri { get; set; }
-        public Button[] buttons { get; set; }
-    }
-
-    public class Button
-    {
-        public string text { get; set; }
-        public string postback { get; set; }
-    }
-
-    public class Outputcontext
-    {
-        public string name { get; set; }
-        public int lifespanCount { get; set; }
-        public Parameters1 parameters { get; set; }
-    }
-
-    public class Parameters1
-    {
-        public string param { get; set; }
-    }
 
 }
