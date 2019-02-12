@@ -3230,26 +3230,28 @@
         };
         $scope.showTarget = $scope.model.hideTarget !== true;
         if (dialogOptions.currentTarget) {
-            $scope.model.target = dialogOptions.currentTarget;
+            // clone the current target so we don't accidentally update the caller's model while manipulating $scope.model.target
+            $scope.model.target = angular.copy(dialogOptions.currentTarget);
             //if we have a node ID, we fetch the current node to build the form data
             if ($scope.model.target.id || $scope.model.target.udi) {
                 //will be either a udi or an int
                 var id = $scope.model.target.udi ? $scope.model.target.udi : $scope.model.target.id;
-                if (!$scope.model.target.path) {
+                // is it a content link?
+                if (!$scope.model.target.isMedia) {
+                    // get the content path
                     entityResource.getPath(id, 'Document').then(function (path) {
-                        $scope.model.target.path = path;
                         //now sync the tree to this path
                         $scope.dialogTreeEventHandler.syncTree({
-                            path: $scope.model.target.path,
+                            path: path,
                             tree: 'content'
                         });
                     });
+                    // get the content properties to build the anchor name list
+                    contentResource.getById(id).then(function (resp) {
+                        $scope.model.target.url = resp.urls[0];
+                        $scope.anchorValues = tinyMceService.getAnchorNames(JSON.stringify(resp.properties));
+                    });
                 }
-                // if a link exists, get the properties to build the anchor name list
-                contentResource.getById(id).then(function (resp) {
-                    $scope.model.target.url = resp.urls[0];
-                    $scope.anchorValues = tinyMceService.getAnchorNames(JSON.stringify(resp.properties));
-                });
             } else if ($scope.model.target.url.length) {
                 // a url but no id/udi indicates an external link - trim the url to remove the anchor/qs
                 // only do the substring if there's a # or a ?
@@ -3313,6 +3315,11 @@
                         $scope.model.target.url = mediaHelper.resolveFile(media);
                         $scope.mediaPickerOverlay.show = false;
                         $scope.mediaPickerOverlay = null;
+                        // make sure the content tree has nothing highlighted 
+                        $scope.dialogTreeEventHandler.syncTree({
+                            path: '-1',
+                            tree: 'content'
+                        });
                     }
                 };
             });
@@ -10588,6 +10595,8 @@
         $scope.performDelete = function () {
             //mark it for deletion (used in the UI)
             $scope.currentNode.loading = true;
+            // Reset the error message
+            $scope.error = null;
             codefileResource.deleteByPath('partialViews', $scope.currentNode.id).then(function () {
                 $scope.currentNode.loading = false;
                 //get the root node before we remove it
@@ -10595,6 +10604,9 @@
                 //TODO: Need to sync tree, etc...
                 treeService.removeNode($scope.currentNode);
                 navigationService.hideMenu();
+            }, function (err) {
+                $scope.currentNode.loading = false;
+                $scope.error = err;
             });
         };
         $scope.cancel = function () {
@@ -11525,7 +11537,7 @@
             setupViewModel();
         };
     });
-    function ColorPickerController($scope) {
+    function ColorPickerController($scope, angularHelper) {
         //setup the default config
         var config = {
             items: [],
@@ -11535,34 +11547,11 @@
         angular.extend(config, $scope.model.config);
         //map back to the model
         $scope.model.config = config;
-        function convertArrayToDictionaryArray(model) {
-            //now we need to format the items in the dictionary because we always want to have an array
-            var newItems = [];
-            for (var i = 0; i < model.length; i++) {
-                newItems.push({
-                    id: model[i],
-                    sortOrder: 0,
-                    value: model[i]
-                });
-            }
-            return newItems;
-        }
-        function convertObjectToDictionaryArray(model) {
-            //now we need to format the items in the dictionary because we always want to have an array
-            var newItems = [];
-            var vals = _.values($scope.model.config.items);
-            var keys = _.keys($scope.model.config.items);
-            for (var i = 0; i < vals.length; i++) {
-                var label = vals[i].value ? vals[i].value : vals[i];
-                newItems.push({
-                    id: keys[i],
-                    sortOrder: vals[i].sortOrder,
-                    value: label
-                });
-            }
-            return newItems;
-        }
         $scope.isConfigured = $scope.model.config && $scope.model.config.items && _.keys($scope.model.config.items).length > 0;
+        $scope.model.activeColor = {
+            value: '',
+            label: ''
+        };
         if ($scope.isConfigured) {
             for (var key in $scope.model.config.items) {
                 if (!$scope.model.config.items[key].hasOwnProperty('value'))
@@ -11602,27 +11591,6 @@
             //now make the editor model the array
             $scope.model.config.items = items;
         }
-        $scope.toggleItem = function (color) {
-            var currentColor = $scope.model.value && $scope.model.value.hasOwnProperty('value') ? $scope.model.value.value : $scope.model.value;
-            var newColor;
-            if (currentColor === color.value) {
-                // deselect
-                $scope.model.value = $scope.model.useLabel ? {
-                    value: '',
-                    label: ''
-                } : '';
-                newColor = '';
-            } else {
-                // select
-                $scope.model.value = $scope.model.useLabel ? {
-                    value: color.value,
-                    label: color.label
-                } : color.value;
-                newColor = color.value;
-            }
-            // this is required to re-validate
-            $scope.propertyForm.modelValue.$setViewValue(newColor);
-        };
         // Method required by the valPropertyValidator directive (returns true if the property editor has at least one color selected)
         $scope.validateMandatory = function () {
             var isValid = !$scope.model.validation.mandatory || $scope.model.value != null && $scope.model.value != '' && (!$scope.model.value.hasOwnProperty('value') || $scope.model.value.value !== '');
@@ -11633,22 +11601,37 @@
             };
         };
         $scope.isConfigured = $scope.model.config && $scope.model.config.items && _.keys($scope.model.config.items).length > 0;
-        // A color is active if it matches the value and label of the model.
-        // If the model doesn't store the label, ignore the label during the comparison.
-        $scope.isActiveColor = function (color) {
-            // no value
-            if (!$scope.model.value)
-                return false;
-            // Complex color (value and label)?
-            if (!$scope.model.value.hasOwnProperty('value'))
-                return $scope.model.value === color.value;
-            return $scope.model.value.value === color.value && $scope.model.value.label === color.label;
+        $scope.onSelect = function (color) {
+            // did the value change?
+            if ($scope.model.value.value === color) {
+                // User clicked the currently selected color
+                // to remove the selection, they don't want
+                // to select any color after all.
+                // Unselect the color and mark as dirty
+                $scope.model.activeColor = null;
+                $scope.model.value = null;
+                angularHelper.getCurrentForm($scope).$setDirty();
+                return;
+            }
+            // yes, update the model (label + value) according to the new color
+            var selectedItem = _.find($scope.model.config.items, function (item) {
+                return item.value === color;
+            });
+            if (!selectedItem) {
+                return;
+            }
+            $scope.model.value = {
+                label: selectedItem.label,
+                value: selectedItem.value
+            };
+            // make sure to set dirty
+            angularHelper.getCurrentForm($scope).$setDirty();
         };
         // Finds the color best matching the model's color,
         // and sets the model color to that one. This is useful when
         // either the value or label was changed on the data type.
         function initActiveColor() {
-            // no value
+            // no value - initialize default value
             if (!$scope.model.value)
                 return;
             // Backwards compatibility, the color used to be stored as a hex value only
@@ -11658,9 +11641,6 @@
                     label: $scope.model.value
                 };
             }
-            // Complex color (value and label)?
-            if (!$scope.model.value.hasOwnProperty('value'))
-                return;
             var modelColor = $scope.model.value.value;
             var modelLabel = $scope.model.value.label;
             // Check for a full match or partial match.
@@ -11695,8 +11675,8 @@
             }
             // If a match was found, set it as the active color.
             if (foundItem) {
-                $scope.model.value.value = foundItem.value;
-                $scope.model.value.label = foundItem.label;
+                $scope.model.activeColor.value = foundItem.value;
+                $scope.model.activeColor.label = foundItem.label;
             }
         }
         // figures out if a value is trueish enough
@@ -14108,6 +14088,7 @@
             });
             editedCrop.coordinates = $scope.currentCrop.coordinates;
             $scope.close();
+            angularHelper.getCurrentForm($scope).$setDirty();
         };
         //reset the current crop
         $scope.reset = function () {
@@ -14145,6 +14126,9 @@
             $scope.imageIsLoaded = true;
             $scope.isCroppable = isCroppable;
             $scope.hasDimensions = hasDimensions;
+        };
+        $scope.focalPointChanged = function () {
+            angularHelper.getCurrentForm($scope).$setDirty();
         };
         //on image selected, update the cropper
         $scope.$on('filesSelected', function (ev, args) {
@@ -14651,7 +14635,7 @@
         }
         angular.module('umbraco').controller('Umbraco.PropertyEditors.ListView.ListLayoutController', ListViewListLayoutController);
     }());
-    function listViewController($rootScope, $scope, $routeParams, $injector, $cookieStore, notificationsService, iconHelper, dialogService, editorState, localizationService, $location, appState, $timeout, $q, mediaResource, listViewHelper, userService, navigationService, treeService) {
+    function listViewController($rootScope, $scope, $routeParams, $injector, $cookieStore, notificationsService, iconHelper, dialogService, editorState, localizationService, $location, appState, $timeout, $q, mediaResource, listViewHelper, userService, navigationService, treeService, mediaHelper) {
         //this is a quick check to see if we're in create mode, if so just exit - we cannot show children for content
         // that isn't created yet, if we continue this will use the parent id in the route params which isn't what
         // we want. NOTE: This is just a safety check since when we scaffold an empty model on the server we remove
@@ -14887,10 +14871,12 @@
                 $scope.actionInProgress = false;
                 $scope.listViewResultSet = data;
                 //update all values for display
+                var section = appState.getSectionState('currentSection');
                 if ($scope.listViewResultSet.items) {
                     _.each($scope.listViewResultSet.items, function (e, index) {
                         setPropertyValues(e);
-                        if (e.contentTypeAlias === 'Folder') {
+                        // create the folders collection (only for media list views)
+                        if (section === 'media' && !mediaHelper.hasFilePropertyType(e)) {
                             $scope.folders.push(e);
                         }
                     });
@@ -17817,6 +17803,8 @@
         $scope.performDelete = function () {
             //mark it for deletion (used in the UI)
             $scope.currentNode.loading = true;
+            // Reset the error message
+            $scope.error = null;
             templateResource.deleteById($scope.currentNode.id).then(function () {
                 $scope.currentNode.loading = false;
                 //get the root node before we remove it
@@ -17824,6 +17812,9 @@
                 //TODO: Need to sync tree, etc...
                 treeService.removeNode($scope.currentNode);
                 navigationService.hideMenu();
+            }, function (err) {
+                $scope.currentNode.loading = false;
+                $scope.error = err;
             });
         };
         $scope.cancel = function () {

@@ -2195,6 +2195,7 @@ Use this directive to render a button with a dropdown of alternative actions.
 
         <umb-toggle
             checked="vm.checked"
+            disabled="vm.disabled"
             on-click="vm.toggle()"
             show-labels="true"
             label-on="Start"
@@ -2215,6 +2216,7 @@ Use this directive to render a button with a dropdown of alternative actions.
 
             var vm = this;
             vm.checked = false;
+            vm.disabled = false;
 
             vm.toggle = toggle;
 
@@ -2229,6 +2231,7 @@ Use this directive to render a button with a dropdown of alternative actions.
 </pre>
 
 @param {boolean} checked Set to <code>true</code> or <code>false</code> to toggle the switch.
+@param {boolean} disabled Set to <code>true</code> or <code>false</code> to disable/enable the switch.
 @param {callback} onClick The function which should be called when the toggle is clicked.
 @param {string=} showLabels Set to <code>true</code> or <code>false</code> to show a "On" or "Off" label next to the switch.
 @param {string=} labelOn Set a custom label for when the switched is turned on. It will default to "On".
@@ -2279,6 +2282,7 @@ Use this directive to render a button with a dropdown of alternative actions.
                 templateUrl: 'views/components/buttons/umb-toggle.html',
                 scope: {
                     checked: '=',
+                    disabled: '=',
                     onClick: '&',
                     labelOn: '@?',
                     labelOff: '@?',
@@ -2656,6 +2660,8 @@ Use this directive to render a button with a dropdown of alternative actions.
                     if (scope.documentType !== null) {
                         scope.previewOpenUrl = '#/settings/documenttypes/edit/' + scope.documentType.id;
                     }
+                    // only allow configuring scheduled publishing if the user has publish ("U") and unpublish ("Z") permissions on this node
+                    scope.allowScheduledPublishing = _.contains(scope.node.allowedActions, 'U') && _.contains(scope.node.allowedActions, 'Z');
                 }
                 scope.auditTrailPageChange = function (pageNumber) {
                     scope.auditTrailOptions.pageNumber = pageNumber;
@@ -5527,7 +5533,8 @@ Use this directive to construct a title. Recommended to use it inside an {@link 
             scope: {
                 src: '=',
                 center: '=',
-                onImageLoaded: '&'
+                onImageLoaded: '&',
+                onGravityChanged: '&'
             },
             link: function (scope, element, attrs) {
                 //Internal values for keeping track of the dot and the size of the editor
@@ -5556,7 +5563,7 @@ Use this directive to construct a title. Recommended to use it inside an {@link 
                     var offsetX = event.offsetX - 10;
                     var offsetY = event.offsetY - 10;
                     calculateGravity(offsetX, offsetY);
-                    lazyEndEvent();
+                    gravityChanged();
                 };
                 var setDimensions = function () {
                     if (scope.isCroppable) {
@@ -5579,11 +5586,11 @@ Use this directive to construct a title. Recommended to use it inside an {@link 
                     scope.center.left = (scope.dimensions.left + 10) / scope.dimensions.width;
                     scope.center.top = (scope.dimensions.top + 10) / scope.dimensions.height;
                 };
-                var lazyEndEvent = _.debounce(function () {
-                    scope.$apply(function () {
-                        scope.$emit('imageFocalPointStop');
-                    });
-                }, 2000);
+                var gravityChanged = function () {
+                    if (angular.isFunction(scope.onGravityChanged)) {
+                        scope.onGravityChanged();
+                    }
+                };
                 //Drag and drop positioning, using jquery ui draggable
                 //TODO ensure that the point doesnt go outside the box
                 $overlay.draggable({
@@ -5599,7 +5606,7 @@ Use this directive to construct a title. Recommended to use it inside an {@link 
                             var offsetY = $overlay[0].offsetTop;
                             calculateGravity(offsetX, offsetY);
                         });
-                        lazyEndEvent();
+                        gravityChanged();
                     }
                 });
                 //// INIT /////
@@ -8237,7 +8244,7 @@ Use this directive to generate color swatches to pick from.
                     //scope.selectedColor({color: color });
                     scope.selectedColor = color;
                     if (scope.onSelect) {
-                        scope.onSelect(color);
+                        scope.onSelect({ color: color });
                     }
                 };
             }
@@ -9119,6 +9126,7 @@ the directive will use {@link umbraco.directives.directive:umbLockedField umbLoc
                                 if (updateAlias) {
                                     scope.alias = safeAlias.alias;
                                 }
+                                scope.placeholderText = scope.labels.idle;
                             });
                         }, 500);
                     } else {
@@ -9135,13 +9143,15 @@ the directive will use {@link umbraco.directives.directive:umbLockedField umbLoc
                 }));
                 // validate custom entered alias
                 eventBindings.push(scope.$watch('alias', function (newValue, oldValue) {
-                    if (scope.alias === '' && bindWatcher === true || scope.alias === null && bindWatcher === true) {
-                        // add watcher
-                        eventBindings.push(scope.$watch('aliasFrom', function (newValue, oldValue) {
-                            if (bindWatcher) {
-                                generateAlias(newValue);
-                            }
-                        }));
+                    if (scope.alias === '' || scope.alias === null || scope.alias === undefined) {
+                        if (bindWatcher === true) {
+                            // add watcher
+                            eventBindings.push(scope.$watch('aliasFrom', function (newValue, oldValue) {
+                                if (bindWatcher) {
+                                    generateAlias(newValue);
+                                }
+                            }));
+                        }
                     }
                 }));
                 // clean up

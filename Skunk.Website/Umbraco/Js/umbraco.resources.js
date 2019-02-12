@@ -299,7 +299,7 @@
     * @name umbraco.resources.codefileResource
     * @description Loads in data for files that contain code such as js scripts, partial views and partial view macros
     **/
-    function codefileResource($q, $http, umbDataFormatter, umbRequestHelper) {
+    function codefileResource($q, $http, umbDataFormatter, umbRequestHelper, localizationService) {
         return {
             /**
          * @ngdoc method
@@ -387,10 +387,11 @@
          *
          */
             deleteByPath: function (type, virtualpath) {
+                var promise = localizationService.localize('codefile_deleteItemFailed', [virtualpath]);
                 return umbRequestHelper.resourcePromise($http.post(umbRequestHelper.getApiUrl('codeFileApiBaseUrl', 'Delete', [
                     { type: type },
                     { virtualPath: virtualpath }
-                ])), 'Failed to delete item: ' + virtualpath);
+                ])), promise);
             },
             /**
          * @ngdoc method
@@ -491,11 +492,14 @@
          *
          */
             createContainer: function (type, parentId, name) {
+                // Is the parent ID numeric?
+                var key = 'codefile_createFolderFailedBy' + (isNaN(parseInt(parentId)) ? 'Name' : 'Id');
+                var promise = localizationService.localize(key, [parentId]);
                 return umbRequestHelper.resourcePromise($http.post(umbRequestHelper.getApiUrl('codeFileApiBaseUrl', 'PostCreateContainer', {
                     type: type,
                     parentId: parentId,
                     name: encodeURIComponent(name)
-                })), 'Failed to create a folder under parent id ' + parentId);
+                })), promise);
             }
         };
     }
@@ -3897,7 +3901,7 @@
     * @name umbraco.resources.templateResource
     * @description Loads in data for templates
     **/
-    function templateResource($q, $http, umbDataFormatter, umbRequestHelper) {
+    function templateResource($q, $http, umbDataFormatter, umbRequestHelper, localizationService) {
         return {
             /**
          * @ngdoc method
@@ -4012,7 +4016,8 @@
          *
          */
             deleteById: function (id) {
-                return umbRequestHelper.resourcePromise($http.post(umbRequestHelper.getApiUrl('templateApiBaseUrl', 'DeleteById', [{ id: id }])), 'Failed to delete item ' + id);
+                var promise = localizationService.localize('template_deleteByIdFailed', [id]);
+                return umbRequestHelper.resourcePromise($http.post(umbRequestHelper.getApiUrl('templateApiBaseUrl', 'DeleteById', [{ id: id }])), promise);
             },
             /**
          * @ngdoc method
